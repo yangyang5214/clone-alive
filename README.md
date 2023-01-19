@@ -1,5 +1,14 @@
 > Clone a website then deploy ...
 
+### install
+
+- go version >=1.18
+- add $GOPATH/bin to PATH
+
+```
+go install github.com/yangyang5214/clone-alive/cmd/clone-alive@latest 
+```
+
 ### Examples
 
 ```
