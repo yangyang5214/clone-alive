@@ -175,7 +175,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 
 	lastTimestamp := time.Now().Unix()
 
-	var resp types.ResponseResult //req.url response
+	var resp *types.ResponseResult //req.url response
 
 	requestMap := sync.Map{}
 
@@ -212,15 +212,15 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		urlPath := urlParsed.Path
 		gologger.Info().Msgf("【%s】 %s find --> %s", contentType, _url, urlPath)
 
-		respResult := types.ResponseResult{
+		respResult := &types.ResponseResult{
 			Timestamp:   time.Now(),
 			Url:         _url,
 			Body:        r.Body,
 			ContentType: contentType,
 		}
 
-		c.log(respResult)
-		c.saveFile(urlParsed.Path, &respResult)
+		c.log(*respResult)
+		c.saveFile(urlParsed.Path, respResult)
 
 		if _url == req.Url {
 			resp = respResult
@@ -261,12 +261,12 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		return errors.Wrap(err, "get location url error")
 	}
 
-	if &resp == nil {
+	if resp == nil {
 		html, err := page.HTML()
 		if err != nil {
 			return errors.Wrap(err, "could not get html")
 		}
-		resp = types.ResponseResult{
+		resp = &types.ResponseResult{
 			Timestamp:   time.Now(),
 			Url:         currentUrl,
 			Body:        html,
@@ -275,13 +275,13 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 	} else if currentUrl != req.Url {
 		resp.Url = currentUrl
 	} else {
-		return nil
+		//ignore
 	}
 	if resp.ContentType == types.TextHtml {
-		page.MustScreenshot(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Hostname()+".png"))
+		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Hostname()+".png"))
 	}
-	c.log(resp)
-	c.saveFile(utils.GetUrlPath(currentUrl), &resp)
+	c.log(*resp)
+	c.saveFile(utils.GetUrlPath(currentUrl), resp)
 	return nil
 }
 
