@@ -301,6 +301,12 @@ func (c *Crawler) locationHref(page *rod.Page) (string, error) {
 	return res.Value.String(), nil
 }
 
+//getScrollHeight it is get 'document.body.scrollHeight'
+func (c *Crawler) getScrollHeight(page *rod.Page) int {
+	res, _ := page.Eval(`document.body.scrollHeight`)
+	return res.Value.Int()
+}
+
 //saveFile it's save data to file
 func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	var data interface{}
