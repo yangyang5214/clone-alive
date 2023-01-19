@@ -149,7 +149,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 			defer wg.Done()
 			defer atomic.AddInt32(&running, -1)
 
-			resp, err := c.navigateRequest(browserInstance, req, callback, urlParsed.Hostname())
+			err := c.navigateRequest(browserInstance, req, callback, urlParsed.Hostname())
 			if err != nil {
 				errResult := types.ErrorResult{
 					Timestamp: time.Now(),
@@ -161,9 +161,6 @@ func (c *Crawler) Crawl(rootURL string) error {
 				data, _ := json.Marshal(&errResult)
 				gologger.Info().Msgf(string(data))
 			}
-
-			data, _ := json.Marshal(&resp)
-			gologger.Info().Msgf(string(data))
 		}()
 	}
 
@@ -173,7 +170,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 }
 
 //navigateRequest is process single url
-func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callback func(r types.Request), rootHost string) (*types.ResponseResult, error) {
+func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callback func(r types.Request), rootHost string) error {
 	page := browser.MustPage(req.Url)
 
 	lastTimestamp := time.Now().Unix()
@@ -220,10 +217,17 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			reader = r.Body
 		}
 
-		c.saveFile(reader, &types.Request{
-			Url:       request.URL,
-			UrlParsed: urlParsed,
-		})
+		c.saveFile(reader, urlParsed.Path)
+
+		resp := types.ResponseResult{
+			Timestamp:   time.Now(),
+			Url:         _url,
+			BodyLen:     len(r.Body),
+			Title:       "",
+			ContentType: contentType,
+		}
+		c.log(resp)
+
 		lastTimestamp = time.Now().Unix()
 	}, func(e *proto.NetworkRequestWillBeSent) {
 		requestMap.Store(e.RequestID, &types.EventListen{
@@ -241,10 +245,6 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		}
 	})()
 
-	networkResponse := proto.NetworkResponseReceived{}
-	networkWait := page.WaitEvent(&networkResponse)
-	networkWait()
-
 	page.MustWaitNavigation()
 	page.MustWaitLoad()
 	page.MustWaitIdle()
@@ -253,12 +253,12 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 
 	html, err := page.HTML()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get html")
+		return errors.Wrap(err, "could not get html")
 	}
 
 	targetInfo, err := page.Info()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not get html info")
+		return errors.Wrap(err, "could not get html info")
 	}
 
 	for {
@@ -268,25 +268,44 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		time.Sleep(1)
 	}
 
-	contentType := networkResponse.Response.MIMEType
-	if contentType == "text/html" {
+	if targetInfo.Title != "" {
 		page.MustScreenshot(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Hostname()+".png"))
 	}
 
-	c.saveFile(html, &req)
+	currentUrl, err := c.locationHref(page)
+	if err != nil {
+		return errors.Wrap(err, "get location url error")
+	}
 
-	return &types.ResponseResult{
+	urlParsed, _ := url.Parse(currentUrl)
+	c.saveFile(html, urlParsed.Path)
+
+	resp := types.ResponseResult{
 		Timestamp: time.Now(),
-		Url:       req.Url,
+		Url:       currentUrl,
 		BodyLen:   len(html),
 		Title:     targetInfo.Title,
-	}, nil
+	}
+	c.log(resp)
+	return nil
 }
 
-//saveFile is save data to file
-func (c *Crawler) saveFile(data interface{}, request *types.Request) {
-	urlPath := request.UrlParsed.Path
-	if request.Url == c.option.Url || urlPath == "" || urlPath == "/" {
+func (c *Crawler) log(resp types.ResponseResult) {
+	data, _ := json.Marshal(&resp)
+	gologger.Info().Msgf(string(data))
+}
+
+func (c *Crawler) locationHref(page *rod.Page) (string, error) {
+	res, err := page.Eval(`() => location.href`)
+	if err != nil {
+		return "", err
+	}
+	return res.Value.String(), nil
+}
+
+//saveFile it's save data to file
+func (c *Crawler) saveFile(data interface{}, urlPath string) {
+	if urlPath == "" || urlPath == "/" {
 		urlPath = "index.html"
 	}
 	paths := []string{c.targetDir, urlPath}
