@@ -18,6 +18,8 @@ clone-alive https://www.baidu.com/
 ### Usage
 
 ```
+clone a website, then deploy as a honeypot ...
+
 Usage:
   clone-alive <url> [flags]
 
@@ -26,9 +28,20 @@ Flags:
   -g, --debug            debug ....
   -d, --depth int8       max depth for crawler (default 3)
   -u, --duration int     max duration for crawler. default set 3h (default 10800)
-  -a, --headless         use chrome as crawler engine
+  -a, --headless         use chrome as crawler engine (default true)
   -h, --help             help for clone-alive
+  -p, --proxy string     set http proxy
 ```
+
+
+### TODO
+
+
+- [ ] support depth
+- [ ] support log response & request log to file
+- [x] support http proxy
+- [ ] support parse html for collect more url
+- [ ] support clone result, deploy as honeypot
 
 ### Demo
 

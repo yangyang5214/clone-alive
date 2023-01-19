@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/yangyang5214/clone-alive/internal"
 	"github.com/yangyang5214/clone-alive/pkg/types"
+	"os"
 )
 
 var (
@@ -27,7 +28,8 @@ var rootCmd = &cobra.Command{
 		option.Url = args[0]
 		r, err := internal.New(option)
 		if err != nil {
-			gologger.Error().Msgf("Created new crawler engine error")
+			gologger.Error().Msgf("Created new crawler engine error: %s", err.Error())
+			os.Exit(0)
 		}
 		r.Run()
 	},
@@ -39,6 +41,7 @@ func init() {
 	rootCmd.Flags().Int8VarP(&option.MaxDepth, "depth", "d", 3, "max depth for crawler")
 	rootCmd.Flags().IntVarP(&option.MaxDuration, "duration", "u", 60*60*3, "max duration for crawler. default set 3h")
 	rootCmd.Flags().IntVarP(&option.Concurrent, "concurrent", "c", 3, "the number of concurrent crawling goroutines")
+	rootCmd.Flags().StringVarP(&option.Proxy, "proxy", "p", "", "set http proxy")
 }
 
 func Execute() {
