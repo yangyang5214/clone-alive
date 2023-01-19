@@ -175,6 +175,8 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 
 	lastTimestamp := time.Now().Unix()
 
+	var resp types.ResponseResult //req.url response
+
 	requestMap := sync.Map{}
 
 	go page.EachEvent(func(e *proto.NetworkLoadingFinished) {
@@ -210,23 +212,19 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		urlPath := urlParsed.Path
 		gologger.Info().Msgf("【%s】 %s find --> %s", contentType, _url, urlPath)
 
-		var reader interface{}
-		if strings.HasPrefix(contentType, "image") {
-			reader = base64.NewDecoder(base64.StdEncoding, strings.NewReader(r.Body))
-		} else {
-			reader = r.Body
-		}
-
-		c.saveFile(reader, urlParsed.Path)
-
-		resp := types.ResponseResult{
+		respResult := types.ResponseResult{
 			Timestamp:   time.Now(),
 			Url:         _url,
-			BodyLen:     len(r.Body),
-			Title:       "",
+			Body:        r.Body,
 			ContentType: contentType,
 		}
-		c.log(resp)
+
+		c.log(respResult)
+		c.saveFile(urlParsed.Path, &respResult)
+
+		if _url == req.Url {
+			resp = respResult
+		}
 
 		lastTimestamp = time.Now().Unix()
 	}, func(e *proto.NetworkRequestWillBeSent) {
@@ -249,17 +247,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 	page.MustWaitLoad()
 	page.MustWaitIdle()
 
-	page.MustReload()
-
-	html, err := page.HTML()
-	if err != nil {
-		return errors.Wrap(err, "could not get html")
-	}
-
-	targetInfo, err := page.Info()
-	if err != nil {
-		return errors.Wrap(err, "could not get html info")
-	}
+	page.MustReload() //reload page
 
 	for {
 		if time.Now().Unix()-lastTimestamp > 3 {
@@ -268,29 +256,39 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		time.Sleep(1)
 	}
 
-	if targetInfo.Title != "" {
-		page.MustScreenshot(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Hostname()+".png"))
-	}
-
 	currentUrl, err := c.locationHref(page)
 	if err != nil {
 		return errors.Wrap(err, "get location url error")
 	}
 
-	urlParsed, _ := url.Parse(currentUrl)
-	c.saveFile(html, urlParsed.Path)
-
-	resp := types.ResponseResult{
-		Timestamp: time.Now(),
-		Url:       currentUrl,
-		BodyLen:   len(html),
-		Title:     targetInfo.Title,
+	if &resp == nil {
+		html, err := page.HTML()
+		if err != nil {
+			return errors.Wrap(err, "could not get html")
+		}
+		resp = types.ResponseResult{
+			Timestamp:   time.Now(),
+			Url:         currentUrl,
+			Body:        html,
+			ContentType: types.TextHtml,
+		}
+	} else if currentUrl != req.Url {
+		resp.Url = currentUrl
+	} else {
+		return nil
+	}
+	if resp.ContentType == types.TextHtml {
+		page.MustScreenshot(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Hostname()+".png"))
 	}
 	c.log(resp)
+	c.saveFile(utils.GetUrlPath(currentUrl), &resp)
 	return nil
 }
 
 func (c *Crawler) log(resp types.ResponseResult) {
+	resp.BodyLen = len(resp.Body)
+	resp.Body = ""
+
 	data, _ := json.Marshal(&resp)
 	gologger.Info().Msgf(string(data))
 }
@@ -304,11 +302,17 @@ func (c *Crawler) locationHref(page *rod.Page) (string, error) {
 }
 
 //saveFile it's save data to file
-func (c *Crawler) saveFile(data interface{}, urlPath string) {
-	if urlPath == "" || urlPath == "/" {
+func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
+	var data interface{}
+	data = resp.Body
+	if (urlPath == "" || urlPath == "/") || resp.Url == c.option.Url {
 		urlPath = "index.html"
 	}
 	paths := []string{c.targetDir, urlPath}
+
+	if strings.HasPrefix(resp.ContentType, "image") {
+		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
+	}
 	_ = rod_util.OutputFile(filepath.Join(paths...), data)
 }
 

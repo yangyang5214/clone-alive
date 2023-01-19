@@ -14,6 +14,7 @@ type ResponseResult struct {
 	BodyLen     int       `json:"body_len"`
 	Title       string    `json:"title"`
 	ContentType string    `json:"content_type"`
+	Body        string    `json:"body"`
 }
 
 type ErrorResult struct {
