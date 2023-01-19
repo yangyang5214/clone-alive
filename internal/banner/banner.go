@@ -14,5 +14,5 @@ var (
 // ShowBanner is used to show the banner to the user
 func ShowBanner() {
 	gologger.Print().Msgf("%s, %s\n", banner, version)
-	gologger.Print().Msgf("\t\nclone-alive\n\n")
+	gologger.Print().Msgf("\t\n%s\n\n", ProjectName)
 }
