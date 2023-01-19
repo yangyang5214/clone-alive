@@ -1,7 +1,7 @@
 package chrome
 
 import (
-	"clone-alive/pkg/types"
+	"github.com/yangyang5214/clone-alive/pkg/types"
 	"os"
 	"testing"
 )

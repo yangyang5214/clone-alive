@@ -1,7 +1,7 @@
 package simple
 
 import (
-	"clone-alive/pkg/types"
+	"github.com/yangyang5214/clone-alive/pkg/types"
 )
 
 //todo 静态爬虫

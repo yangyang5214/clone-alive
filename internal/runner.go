@@ -1,13 +1,13 @@
 package internal
 
 import (
-	"clone-alive/internal/banner"
-	"clone-alive/pkg/engine"
-	"clone-alive/pkg/engine/chrome"
-	"clone-alive/pkg/engine/simple"
-	"clone-alive/pkg/types"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
+	"github.com/yangyang5214/clone-alive/internal/banner"
+	"github.com/yangyang5214/clone-alive/pkg/engine"
+	"github.com/yangyang5214/clone-alive/pkg/engine/chrome"
+	"github.com/yangyang5214/clone-alive/pkg/engine/simple"
+	"github.com/yangyang5214/clone-alive/pkg/types"
 )
 
 type Runner struct {

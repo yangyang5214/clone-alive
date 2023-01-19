@@ -1,7 +1,7 @@
 package main
 
 import (
-	"clone-alive/cmd"
+	"github.com/yangyang5214/clone-alive/cmd"
 )
 
 func main() {

@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"clone-alive/internal"
-	"clone-alive/pkg/types"
 	"github.com/projectdiscovery/gologger"
 	"github.com/spf13/cobra"
+	"github.com/yangyang5214/clone-alive/internal"
+	"github.com/yangyang5214/clone-alive/pkg/types"
 )
 
 var (

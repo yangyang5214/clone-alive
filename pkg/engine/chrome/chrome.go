@@ -1,8 +1,6 @@
 package chrome
 
 import (
-	"clone-alive/pkg/types"
-	"clone-alive/pkg/utils"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -16,6 +14,8 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/remeh/sizedwaitgroup"
 	"github.com/shirou/gopsutil/v3/process"
+	"github.com/yangyang5214/clone-alive/pkg/types"
+	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"go.uber.org/multierr"
 	"net/url"
 	"os"
