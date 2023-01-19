@@ -8,6 +8,7 @@ import (
 	stack "github.com/emirpasic/gods/stacks/linkedliststack"
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
+	"github.com/go-rod/rod/lib/launcher/flags"
 	"github.com/go-rod/rod/lib/proto"
 	rod_util "github.com/go-rod/rod/lib/utils"
 	"github.com/pkg/errors"
@@ -43,6 +44,13 @@ func New(options *types.Options) (*Crawler, error) {
 		return nil, err
 	}
 
+	if options.Proxy != "" {
+		_, err = url.Parse(options.Proxy)
+		if err != nil {
+			return nil, errors.Wrap(err, "proxy url error")
+		}
+	}
+
 	targetDir := path.Join(utils.CurrentDirectory(), urlParsed.Hostname())
 
 	if _, err := os.Stat(targetDir); err == nil {
@@ -69,7 +77,11 @@ func New(options *types.Options) (*Crawler, error) {
 		Delete("use-mock-keychain").
 		UserDataDir(dataStore)
 
-	chromeLauncher.Set("no-sandbox", "true")
+	if options.Proxy != "" {
+		chromeLauncher.Set(flags.ProxyServer, options.Proxy)
+	}
+
+	chromeLauncher.Set(flags.NoSandbox, "true")
 	if options.Debug {
 		chromeLauncher.Headless(false)
 	}

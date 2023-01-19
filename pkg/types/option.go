@@ -7,4 +7,5 @@ type Options struct {
 	Debug       bool
 	MaxDuration int
 	Concurrent  int
+	Proxy       string
 }
