@@ -186,13 +186,17 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 	requestMap := sync.Map{}
 
 	go page.EachEvent(func(e *proto.NetworkLoadingFinished) {
-		data, _ := requestMap.Load(e.RequestID)
-		if data == nil {
+		data, ok := requestMap.Load(e.RequestID)
+		if !ok {
 			return
 		}
 		event := data.(*types.EventListen)
 		request := event.Request
 		response := event.Response
+
+		if request.URL != response.URL {
+			gologger.Info().Msgf("Url changed, %s <--> %s", request.URL, response.URL)
+		}
 
 		var _url string
 		if request != nil {
@@ -239,8 +243,8 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			Request: e.Request,
 		})
 	}, func(e *proto.NetworkResponseReceived) {
-		data, _ := requestMap.Load(e.RequestID)
-		if data == nil {
+		data, ok := requestMap.Load(e.RequestID)
+		if !ok {
 			requestMap.Store(e.RequestID, &types.EventListen{
 				Response: e.Response,
 			})
