@@ -38,6 +38,9 @@ type Crawler struct {
 
 //New is created new Crawler
 func New(options *types.Options) (*Crawler, error) {
+	if options.Url == "" {
+		return nil, errors.Errorf("Url missing")
+	}
 	dataStore, _ := os.MkdirTemp("", "clone-alive-*")
 	urlParsed, err := url.Parse(options.Url)
 	if err != nil {

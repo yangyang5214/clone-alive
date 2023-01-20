@@ -8,8 +8,13 @@ import (
 
 //TestKillAllChrome is kill all running chromium
 func TestKillAllChrome(t *testing.T) {
-	chrome, _ := New(&types.Options{})
+	chrome, err := New(&types.Options{
+		Url: "https://www.baidu.com/",
+	})
+	defer os.RemoveAll(chrome.targetDir)
+	if err != nil {
+		panic(err)
+	}
 	chrome.previousPIDs = nil
 	_ = chrome.killChromeProcesses()
-	_ = os.RemoveAll(chrome.targetDir)
 }
