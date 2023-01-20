@@ -3,7 +3,6 @@ package chrome
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	stack "github.com/emirpasic/gods/stacks/linkedliststack"
 	"github.com/go-rod/rod"
@@ -15,6 +14,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/remeh/sizedwaitgroup"
 	"github.com/shirou/gopsutil/v3/process"
+	"github.com/yangyang5214/clone-alive/pkg/output"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"go.uber.org/multierr"
@@ -32,7 +32,8 @@ type Crawler struct {
 	browser      *rod.Browser
 	tempDir      string
 	targetDir    string
-	option       *types.Options
+	option       types.Options
+	outputWriter output.Writer
 	previousPIDs map[int32]struct{} // track already running PIDs
 }
 
@@ -58,12 +59,10 @@ func New(options *types.Options) (*Crawler, error) {
 
 	if _, err := os.Stat(targetDir); err == nil {
 		_ = os.RemoveAll(targetDir)
-	} else if errors.Is(err, os.ErrNotExist) {
-		err = os.MkdirAll(targetDir, os.ModePerm)
-		if err != nil {
-			return nil, err
-		}
-	} else {
+	}
+
+	err = os.MkdirAll(targetDir, os.ModePerm)
+	if err != nil {
 		return nil, err
 	}
 
@@ -99,13 +98,19 @@ func New(options *types.Options) (*Crawler, error) {
 		return nil, browserErr
 	}
 
+	outputWriter, err := output.New(targetDir)
+	if err != nil {
+		return nil, err
+	}
+
 	previousPIDs := findChromeProcesses()
 	return &Crawler{
-		option:       options,
+		option:       *options,
 		browser:      browser,
 		previousPIDs: previousPIDs,
 		tempDir:      dataStore,
 		targetDir:    targetDir,
+		outputWriter: outputWriter,
 	}, nil
 }
 
@@ -154,15 +159,12 @@ func (c *Crawler) Crawl(rootURL string) error {
 
 			err := c.navigateRequest(browserInstance, req, callback, urlParsed.Host)
 			if err != nil {
-				errResult := types.ErrorResult{
+				errResult := &types.ResponseResult{
 					Timestamp: time.Now(),
 					Url:       req.Url,
 					Error:     err.Error(),
 				}
-				gologger.Error().Msg(err.Error())
-
-				data, _ := json.Marshal(&errResult)
-				gologger.Info().Msgf(string(data))
+				_ = c.outputWriter.Write(errResult)
 			}
 		}()
 	}
@@ -222,7 +224,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			ContentType: contentType,
 		}
 
-		c.log(*respResult)
+		_ = c.outputWriter.Write(respResult)
 		c.saveFile(urlParsed.Path, respResult)
 
 		if _url == req.Url {
@@ -283,17 +285,10 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 	if resp.ContentType == types.TextHtml {
 		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Host+".png"))
 	}
-	c.log(*resp)
+
+	_ = c.outputWriter.Write(resp)
 	c.saveFile(utils.GetUrlPath(currentUrl), resp)
 	return nil
-}
-
-func (c *Crawler) log(resp types.ResponseResult) {
-	resp.BodyLen = len(resp.Body)
-	resp.Body = ""
-
-	data, _ := json.Marshal(&resp)
-	gologger.Info().Msgf(string(data))
 }
 
 func (c *Crawler) locationHref(page *rod.Page) (string, error) {
@@ -341,6 +336,8 @@ func (c *Crawler) Close() error {
 	if err := os.RemoveAll(c.tempDir); err != nil {
 		return err
 	}
+
+	_ = c.outputWriter.Close()
 
 	return c.killChromeProcesses()
 }

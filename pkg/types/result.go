@@ -1,6 +1,8 @@
 package types
 
-import "time"
+import (
+	"time"
+)
 
 type RequestResult struct {
 	Timestamp time.Time `json:"timestamp"`
@@ -15,10 +17,5 @@ type ResponseResult struct {
 	Title       string    `json:"title"`
 	ContentType string    `json:"content_type"`
 	Body        string    `json:"body"`
-}
-
-type ErrorResult struct {
-	Timestamp time.Time `json:"timestamp"`
-	Url       string    `json:"url,omitempty"`
-	Error     string    `json:"error,omitempty"`
+	Error       string    `json:"error,omitempty"`
 }
