@@ -18,6 +18,7 @@ import (
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"go.uber.org/multierr"
+	"net/http"
 	"net/url"
 	"os"
 	"path"
@@ -221,6 +222,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			Timestamp:   time.Now(),
 			Url:         _url,
 			Body:        r.Body,
+			Status:      response.Status,
 			ContentType: contentType,
 		}
 
@@ -275,6 +277,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			Timestamp:   time.Now(),
 			Url:         currentUrl,
 			Body:        html,
+			Status:      http.StatusOK,
 			ContentType: types.TextHtml,
 		}
 	} else if currentUrl != req.Url {

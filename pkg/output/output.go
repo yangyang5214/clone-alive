@@ -30,6 +30,7 @@ func New(targetDir string) (Writer, error) {
 }
 
 func (s *StandardWriter) Write(respResult *types.ResponseResult) error {
+	respResult.BodyLen = len(respResult.Body)
 	respResult.Body = ""
 	data, err := json.Marshal(&respResult)
 	if err != nil {

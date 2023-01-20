@@ -17,5 +17,6 @@ type ResponseResult struct {
 	Title       string    `json:"title"`
 	ContentType string    `json:"content_type"`
 	Body        string    `json:"body"`
+	Status      int       `json:"status"`
 	Error       string    `json:"error,omitempty"`
 }
