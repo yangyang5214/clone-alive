@@ -54,7 +54,7 @@ func New(options *types.Options) (*Crawler, error) {
 		}
 	}
 
-	targetDir := path.Join(utils.CurrentDirectory(), urlParsed.Hostname())
+	targetDir := path.Join(utils.CurrentDirectory(), urlParsed.Host)
 
 	if _, err := os.Stat(targetDir); err == nil {
 		_ = os.RemoveAll(targetDir)
@@ -152,7 +152,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 			defer wg.Done()
 			defer atomic.AddInt32(&running, -1)
 
-			err := c.navigateRequest(browserInstance, req, callback, urlParsed.Hostname())
+			err := c.navigateRequest(browserInstance, req, callback, urlParsed.Host)
 			if err != nil {
 				errResult := types.ErrorResult{
 					Timestamp: time.Now(),
@@ -202,7 +202,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			return
 		}
 
-		if urlParsed.Hostname() != rootHost {
+		if urlParsed.Host != rootHost {
 			return // 外部站点
 		}
 
@@ -281,7 +281,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		//ignore
 	}
 	if resp.ContentType == types.TextHtml {
-		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Hostname()+".png"))
+		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Host+".png"))
 	}
 	c.log(*resp)
 	c.saveFile(utils.GetUrlPath(currentUrl), resp)
