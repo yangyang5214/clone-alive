@@ -9,3 +9,10 @@ type Options struct {
 	Concurrent  int
 	Proxy       string
 }
+
+type AliveOption struct {
+	Port      int
+	HomeDir   string
+	RouteFile string
+	Debug     bool
+}

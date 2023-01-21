@@ -3,7 +3,14 @@ package cmd
 import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/spf13/cobra"
+	"github.com/yangyang5214/clone-alive/pkg/alive"
+	"github.com/yangyang5214/clone-alive/pkg/output"
+	"github.com/yangyang5214/clone-alive/pkg/types"
+	"os"
+	"path/filepath"
 )
+
+var aliveOption types.AliveOption
 
 // aliveCmd represents the alive command
 var aliveCmd = &cobra.Command{
@@ -11,20 +18,20 @@ var aliveCmd = &cobra.Command{
 	Short: "Deploy as a honeypot",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
-		gologger.Info().Msg("alive called")
+		aliveOption.RouteFile = filepath.Join(aliveOption.HomeDir, output.RouterFile)
+		a := alive.New(aliveOption)
+		err := a.Run()
+		if err != nil {
+			gologger.Error().Msg(err.Error())
+			os.Exit(0)
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(aliveCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// aliveCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// aliveCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	aliveCmd.Flags().IntVarP(&aliveOption.Port, "port", "p", 8080, "default port for web server")
+	aliveCmd.Flags().BoolVarP(&aliveOption.Debug, "debug", "b", false, "debug model for gin")
+	aliveCmd.Flags().StringVarP(&aliveOption.HomeDir, "home-dir", "d", "", "static file dir")
+	_ = aliveCmd.MarkFlagRequired("home-dir")
 }
