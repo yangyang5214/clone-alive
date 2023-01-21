@@ -13,7 +13,7 @@ endif
 
 all: build
 build:
-	$(GOBUILD) $(GOFLAGS) -ldflags '$(LDFLAGS)' -o "clone-alive" cmd/clone-alive/main.go
+	$(GOBUILD) $(GOFLAGS) -ldflags '$(LDFLAGS)' -o "clone-alive" main.go
 test:
 	$(GOTEST) $(GOFLAGS) ./...
 tidy:

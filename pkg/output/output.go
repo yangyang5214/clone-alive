@@ -8,10 +8,12 @@ import (
 	"path/filepath"
 )
 
+var RouterFile = "runtime.log"
+
 // Writer is an interface which writes output to somewhere for katana events.
 type Writer interface {
 	Close() error
-	Write(*types.ResponseResult) error
+	Write(types.ResponseResult) error
 }
 
 type StandardWriter struct {
@@ -21,7 +23,7 @@ type StandardWriter struct {
 //New creates a new StandardWriter obj
 func New(targetDir string) (Writer, error) {
 	writer := &StandardWriter{}
-	output, err := newFileOutputWriter(filepath.Join(targetDir, "runtime.log"))
+	output, err := newFileOutputWriter(filepath.Join(targetDir, RouterFile))
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create output file")
 	}
@@ -29,7 +31,7 @@ func New(targetDir string) (Writer, error) {
 	return writer, nil
 }
 
-func (s *StandardWriter) Write(respResult *types.ResponseResult) error {
+func (s *StandardWriter) Write(respResult types.ResponseResult) error {
 	respResult.BodyLen = len(respResult.Body)
 	respResult.Body = ""
 	data, err := json.Marshal(&respResult)

@@ -160,7 +160,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 
 			err := c.navigateRequest(browserInstance, req, callback, urlParsed.Host)
 			if err != nil {
-				errResult := &types.ResponseResult{
+				errResult := types.ResponseResult{
 					Timestamp: time.Now(),
 					Url:       req.Url,
 					Error:     err.Error(),
@@ -194,16 +194,13 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		request := event.Request
 		response := event.Response
 
-		if request.URL != response.URL {
-			gologger.Info().Msgf("Url changed, %s <--> %s", request.URL, response.URL)
+		if request == nil {
+			request = &proto.NetworkRequest{
+				Method: http.MethodGet,
+				URL:    response.URL,
+			}
 		}
-
-		var _url string
-		if request != nil {
-			_url = request.URL
-		} else {
-			_url = response.URL
-		}
+		_url := request.URL
 		urlParsed, err := url.Parse(_url)
 		if err != nil {
 			return
@@ -228,12 +225,11 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			Body:        r.Body,
 			Status:      response.Status,
 			ContentType: contentType,
+			HttpMethod:  request.Method,
 		}
 
-		_ = c.outputWriter.Write(respResult)
-		c.saveFile(urlParsed.Path, respResult)
-
-		if _url == req.Url {
+		c.log(respResult)
+		if utils.IsSameURL(_url, req.Url) {
 			resp = respResult
 		}
 
@@ -267,11 +263,6 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		time.Sleep(1)
 	}
 
-	currentUrl, err := c.locationHref(page)
-	if err != nil {
-		return errors.Wrap(err, "get location url error")
-	}
-
 	if resp == nil {
 		html, err := page.HTML()
 		if err != nil {
@@ -279,23 +270,30 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		}
 		resp = &types.ResponseResult{
 			Timestamp:   time.Now(),
-			Url:         currentUrl,
+			Url:         req.Url, //currentUrl already collect in network event
 			Body:        html,
 			Status:      http.StatusOK,
 			ContentType: types.TextHtml,
+			HttpMethod:  http.MethodGet,
 		}
-	} else if currentUrl != req.Url {
-		resp.Url = currentUrl
-	} else {
-		//ignore
 	}
+
 	if resp.ContentType == types.TextHtml {
 		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Host+".png"))
 	}
-
-	_ = c.outputWriter.Write(resp)
-	c.saveFile(utils.GetUrlPath(currentUrl), resp)
+	c.log(resp)
 	return nil
+}
+
+func (c *Crawler) log(result *types.ResponseResult) {
+	_ = c.outputWriter.Write(*result)
+	c.saveFile(utils.GetUrlPath(result.Url), result)
+	if utils.IsSameURL(result.Url, c.option.Url) {
+		parsed, _ := url.Parse(result.Url)
+		result.Url = fmt.Sprintf("%s://%s", parsed.Scheme, parsed.Host)
+		_ = c.outputWriter.Write(*result)
+		c.saveFile("index.html", result)
+	}
 }
 
 func (c *Crawler) locationHref(page *rod.Page) (string, error) {
@@ -316,7 +314,7 @@ func (c *Crawler) getScrollHeight(page *rod.Page) int {
 func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	var data interface{}
 	data = resp.Body
-	if (urlPath == "" || urlPath == "/") || resp.Url == c.option.Url {
+	if urlPath == "" || urlPath == "/" {
 		urlPath = "index.html"
 	}
 	paths := []string{c.targetDir, urlPath}
