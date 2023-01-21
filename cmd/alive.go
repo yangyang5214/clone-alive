@@ -18,6 +18,13 @@ var aliveCmd = &cobra.Command{
 	Short: "Deploy as a honeypot",
 	Long:  ``,
 	Run: func(cmd *cobra.Command, args []string) {
+		if len(args) < 1 {
+			if err := cmd.Usage(); err != nil {
+				gologger.Error().Msg(err.Error())
+			}
+			return
+		}
+		aliveOption.HomeDir = args[0]
 		aliveOption.RouteFile = filepath.Join(aliveOption.HomeDir, output.RouterFile)
 		a := alive.New(aliveOption)
 		err := a.Run()
@@ -30,8 +37,7 @@ var aliveCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(aliveCmd)
-	aliveCmd.Flags().IntVarP(&aliveOption.Port, "port", "p", 8080, "default port for web server")
+	aliveCmd.Flags().IntVarP(&aliveOption.Port, "port", "p", 8001, "port for server")
 	aliveCmd.Flags().BoolVarP(&aliveOption.Debug, "debug", "b", false, "debug model for gin")
 	aliveCmd.Flags().StringVarP(&aliveOption.HomeDir, "home-dir", "d", "", "static file dir")
-	_ = aliveCmd.MarkFlagRequired("home-dir")
 }

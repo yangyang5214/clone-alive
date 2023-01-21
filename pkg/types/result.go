@@ -12,6 +12,7 @@ type RequestResult struct {
 
 type ResponseResult struct {
 	Timestamp   time.Time `json:"timestamp"`
+	HttpMethod  string    `json:"http_method"`
 	Url         string    `json:"url,omitempty"`
 	BodyLen     int       `json:"body_len"`
 	Title       string    `json:"title"`
