@@ -11,13 +11,14 @@ type RequestResult struct {
 }
 
 type ResponseResult struct {
-	Timestamp   time.Time `json:"timestamp"`
-	HttpMethod  string    `json:"http_method"`
-	Url         string    `json:"url,omitempty"`
-	BodyLen     int       `json:"body_len"`
-	Title       string    `json:"title"`
-	ContentType string    `json:"content_type"`
-	Body        string    `json:"body"`
-	Status      int       `json:"status"`
-	Error       string    `json:"error,omitempty"`
+	Timestamp           time.Time `json:"timestamp"`
+	HttpMethod          string    `json:"http_method"`
+	Url                 string    `json:"url,omitempty"`
+	BodyLen             int       `json:"body_len"`
+	Title               string    `json:"title"`
+	RequestContentType  string    `json:"request_content_type"`
+	ResponseContentType string    `json:"response_content_type"`
+	Body                string    `json:"body"`
+	Status              int       `json:"status"`
+	Error               string    `json:"error,omitempty"`
 }

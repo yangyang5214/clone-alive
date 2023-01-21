@@ -48,8 +48,13 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		}
 		r := v.(*types.ResponseResult)
 
-		c.Header("Content-Type", types.ConvertContentType(r.ContentType))
-		switch r.ContentType {
+		contentType := r.RequestContentType
+		if contentType == "" {
+			contentType = r.ResponseContentType
+		}
+		c.Header("Content-Type", types.ConvertContentType(contentType))
+
+		switch contentType {
 		case types.ApplicationJson:
 			c.JSON(r.Status, data)
 		default:

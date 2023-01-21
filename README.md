@@ -148,9 +148,9 @@ go to http://localhost:8000/
 
 ![](./images/baidu.png)
 
-- more demo
-
 ![](./images/demo_1.png)
+
+![](./images/metabase.png)
 
 ### Reference
 

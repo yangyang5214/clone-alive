@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/emirpasic/gods v1.18.1
+	github.com/gin-gonic/gin v1.8.2
 	github.com/go-rod/rod v0.112.3
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/gologger v1.1.7
@@ -18,7 +19,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
-	github.com/gin-gonic/gin v1.8.2 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect

@@ -220,12 +220,13 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		gologger.Info().Msgf("【%s】 %s find --> %s", contentType, _url, urlPath)
 
 		respResult := &types.ResponseResult{
-			Timestamp:   time.Now(),
-			Url:         _url,
-			Body:        r.Body,
-			Status:      response.Status,
-			ContentType: contentType,
-			HttpMethod:  request.Method,
+			Timestamp:           time.Now(),
+			Url:                 _url,
+			Body:                r.Body,
+			Status:              response.Status,
+			HttpMethod:          request.Method,
+			RequestContentType:  request.Headers["Content-Type"].String(),
+			ResponseContentType: response.MIMEType,
 		}
 
 		c.log(respResult)
@@ -269,16 +270,16 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			return errors.Wrap(err, "could not get html")
 		}
 		resp = &types.ResponseResult{
-			Timestamp:   time.Now(),
-			Url:         req.Url, //currentUrl already collect in network event
-			Body:        html,
-			Status:      http.StatusOK,
-			ContentType: types.TextHtml,
-			HttpMethod:  http.MethodGet,
+			Timestamp:           time.Now(),
+			Url:                 req.Url, //currentUrl already collect in network event
+			Body:                html,
+			Status:              http.StatusOK,
+			ResponseContentType: types.TextHtml,
+			HttpMethod:          http.MethodGet,
 		}
 	}
 
-	if resp.ContentType == types.TextHtml {
+	if resp.ResponseContentType == types.TextHtml {
 		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Host+".png"))
 	}
 	c.log(resp)
@@ -319,7 +320,7 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	}
 	paths := []string{c.targetDir, urlPath}
 
-	if strings.HasPrefix(resp.ContentType, "image") {
+	if strings.HasPrefix(resp.ResponseContentType, "image") {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
 	}
 	_ = rod_util.OutputFile(filepath.Join(paths...), data)
