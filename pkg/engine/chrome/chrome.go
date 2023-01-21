@@ -228,9 +228,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			HttpMethod:  request.Method,
 		}
 
-		_ = c.outputWriter.Write(*respResult)
-		c.saveFile(urlPath, respResult)
-
+		c.log(respResult)
 		if utils.IsSameURL(_url, req.Url) {
 			resp = respResult
 		}
@@ -283,10 +281,19 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 	if resp.ContentType == types.TextHtml {
 		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Host+".png"))
 	}
-
-	_ = c.outputWriter.Write(*resp)
-	c.saveFile(utils.GetUrlPath(resp.Url), resp)
+	c.log(resp)
 	return nil
+}
+
+func (c *Crawler) log(result *types.ResponseResult) {
+	_ = c.outputWriter.Write(*result)
+	c.saveFile(utils.GetUrlPath(result.Url), result)
+	if utils.IsSameURL(result.Url, c.option.Url) {
+		parsed, _ := url.Parse(result.Url)
+		result.Url = fmt.Sprintf("%s://%s", parsed.Scheme, parsed.Host)
+		_ = c.outputWriter.Write(*result)
+		c.saveFile("index.html", result)
+	}
 }
 
 func (c *Crawler) locationHref(page *rod.Page) (string, error) {
@@ -307,7 +314,7 @@ func (c *Crawler) getScrollHeight(page *rod.Page) int {
 func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	var data interface{}
 	data = resp.Body
-	if urlPath == "" || urlPath == "/" || utils.IsSameURL(resp.Url, c.option.Url) {
+	if urlPath == "" || urlPath == "/" {
 		urlPath = "index.html"
 	}
 	paths := []string{c.targetDir, urlPath}

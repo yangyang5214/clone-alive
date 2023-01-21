@@ -79,7 +79,9 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 		}
 
 		urlPath := utils.GetUrlPath(resp.Url)
-
+		if urlPath == "" {
+			urlPath = "/"
+		}
 		_, ok := a.routeMap.Load(urlPath)
 		if ok {
 			continue
