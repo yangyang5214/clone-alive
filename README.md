@@ -6,7 +6,7 @@
 - add $GOPATH/bin to PATH
 
 ```
-go install github.com/yangyang5214/clone-alive/cmd/clone-alive@latest 
+go install github.com/yangyang5214/clone-alive@latest 
 ```
 
 ### Examples
