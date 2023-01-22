@@ -219,13 +219,18 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 		urlPath := urlParsed.Path
 		gologger.Info().Msgf("【%s】 %s find --> %s", contentType, _url, urlPath)
 
+		requestContentTypeVal := request.Headers["Content-Type"].Val()
+		if requestContentTypeVal == nil {
+			requestContentTypeVal = ""
+		}
+
 		respResult := &types.ResponseResult{
 			Timestamp:           time.Now(),
 			Url:                 _url,
 			Body:                r.Body,
 			Status:              response.Status,
 			HttpMethod:          request.Method,
-			RequestContentType:  request.Headers["Content-Type"].String(),
+			RequestContentType:  requestContentTypeVal.(string),
 			ResponseContentType: response.MIMEType,
 		}
 

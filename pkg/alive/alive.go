@@ -49,7 +49,7 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		r := v.(*types.ResponseResult)
 
 		contentType := r.RequestContentType
-		if contentType == "" {
+		if contentType == "" || contentType == "<nil>" {
 			contentType = r.ResponseContentType
 		}
 		c.Header("Content-Type", types.ConvertContentType(contentType))
