@@ -8,6 +8,7 @@ type Options struct {
 	MaxDuration int
 	Concurrent  int
 	Proxy       string
+	Timeout     int
 }
 
 type AliveOption struct {

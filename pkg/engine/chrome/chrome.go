@@ -252,6 +252,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 	})()
 
 	page.MustWaitNavigation()
+	page.Timeout(time.Duration(c.option.Timeout) * time.Second)
 	page.MustWaitLoad()
 	page.MustWaitIdle()
 

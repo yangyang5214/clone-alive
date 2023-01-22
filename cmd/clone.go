@@ -44,5 +44,6 @@ func init() {
 	cloneCmd.Flags().Int8VarP(&option.MaxDepth, "depth", "d", 3, "max depth for crawler")
 	cloneCmd.Flags().IntVarP(&option.MaxDuration, "duration", "u", 60*60*3, "max duration for crawler. default set 3h")
 	cloneCmd.Flags().IntVarP(&option.Concurrent, "concurrent", "c", 3, "the number of concurrent crawling goroutines")
+	cloneCmd.Flags().IntVarP(&option.Timeout, "timeout", "t", 10, "set timeout")
 	cloneCmd.Flags().StringVarP(&option.Proxy, "proxy", "p", "", "set http proxy")
 }
