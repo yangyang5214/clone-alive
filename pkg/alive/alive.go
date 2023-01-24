@@ -8,8 +8,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
+	"github.com/yangyang5214/clone-alive/pkg/magic"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,10 +39,6 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		}
 
 		p := filepath.Join(a.option.HomeDir, fileName)
-		data, err := utils.ReadFile(p)
-		if err != nil {
-			c.JSON(http.StatusOK, "")
-		}
 
 		v, ok := a.routeMap.Load(fullPath)
 		if !ok {
@@ -52,11 +50,25 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		if contentType == "" || contentType == "<nil>" {
 			contentType = r.ResponseContentType
 		}
-		c.Header("Content-Type", types.ConvertContentType(contentType))
+		contentType = types.ConvertContentType(contentType)
+		c.Header("Content-Type", contentType)
+
+		if magic.Hit(fullPath, contentType) {
+			fileName = magic.RebuildUrl(fullPath, rand.Intn(magic.RetryCount), contentType)
+			p = filepath.Join(a.option.HomeDir, fileName)
+		}
+
+		data, err := utils.ReadFile(p)
+		if err != nil {
+			c.JSON(http.StatusOK, "")
+		}
 
 		switch contentType {
 		case types.ApplicationJson:
 			c.JSON(r.Status, data)
+		case types.ImagePng:
+		case types.ImageJpeg:
+			c.Data(r.Status, contentType, data)
 		default:
 			c.File(p)
 		}

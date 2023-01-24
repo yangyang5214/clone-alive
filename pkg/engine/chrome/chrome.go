@@ -14,6 +14,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/remeh/sizedwaitgroup"
 	"github.com/shirou/gopsutil/v3/process"
+	"github.com/yangyang5214/clone-alive/pkg/magic"
 	"github.com/yangyang5214/clone-alive/pkg/output"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
@@ -34,6 +35,7 @@ type Crawler struct {
 	tempDir      string
 	targetDir    string
 	option       types.Options
+	expandClient *magic.ExpandVerifyCode
 	outputWriter output.Writer
 	previousPIDs map[int32]struct{} // track already running PIDs
 }
@@ -112,6 +114,7 @@ func New(options *types.Options) (*Crawler, error) {
 		tempDir:      dataStore,
 		targetDir:    targetDir,
 		outputWriter: outputWriter,
+		expandClient: magic.NewExpand(),
 	}, nil
 }
 
@@ -234,7 +237,20 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			ResponseContentType: response.MIMEType,
 		}
 
-		c.log(respResult)
+		var expandResult = c.expandClient.Run(_url, contentType)
+		if expandResult == nil {
+			c.log(respResult)
+		} else {
+			for _, item := range expandResult {
+				itemResp := *respResult
+				itemResp.Body = item.Body
+				itemResp.Url = item.UrlStr
+				itemResp.ResponseContentType = ""
+				c.saveFile(utils.GetUrlPath(itemResp.Url), &itemResp)
+			}
+			_ = c.outputWriter.Write(*respResult)
+		}
+
 		if utils.IsSameURL(_url, req.Url) {
 			resp = respResult
 		}
@@ -329,7 +345,10 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	if strings.HasPrefix(resp.ResponseContentType, "image") {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
 	}
-	_ = rod_util.OutputFile(filepath.Join(paths...), data)
+	err := rod_util.OutputFile(filepath.Join(paths...), data)
+	if err != nil {
+		gologger.Error().Msgf("OutputFile error: %s", err.Error())
+	}
 }
 
 //navigateCallback is add new url to queue //todo

@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"io/ioutil"
+	"net/http"
 	"net/url"
 	"strings"
 )
@@ -16,4 +18,19 @@ func GetUrlPath(u string) string {
 
 func IsSameURL(u1 string, u2 string) bool {
 	return GetUrlPath(u1) == GetUrlPath(u2)
+}
+
+func DoHttpReq(req *http.Request, httpClient *http.Client) []byte {
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil
+	}
+	if resp.StatusCode != 200 {
+		return nil
+	}
+	bytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil
+	}
+	return bytes
 }
