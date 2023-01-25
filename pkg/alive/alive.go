@@ -132,5 +132,7 @@ func (a *Alive) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	return r.Run(fmt.Sprintf(":%d", a.option.Port))
+	server := fmt.Sprintf(":%d", a.option.Port)
+	gologger.Info().Msgf("Alive server start with 127.0.0.1%s", server)
+	return r.Run(server)
 }
