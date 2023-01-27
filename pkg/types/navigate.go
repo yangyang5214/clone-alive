@@ -1,12 +1,16 @@
 package types
 
-import "net/url"
+import (
+	"github.com/PuerkitoBio/goquery"
+)
 
 type Request struct {
-	Url       string
-	UrlParsed *url.URL
+	Url   string
+	Depth int
 }
 
 type Response struct {
-	Url string
+	Body   string
+	Reader *goquery.Document
+	Depth  int
 }
