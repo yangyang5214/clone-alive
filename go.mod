@@ -9,7 +9,6 @@ require (
 	github.com/go-rod/rod v0.112.3
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/gologger v1.1.7
-	github.com/projectdiscovery/katana v0.0.3
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/spf13/cobra v1.6.1
