@@ -241,7 +241,10 @@ func (c *Crawler) navigateCallback() func(req types.Request) {
 
 // navigateRequest is process single url
 func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*types.Response, error) {
-	page := browser.MustPage(req.Url)
+	page, err := browser.Page(proto.TargetCreateTarget{URL: req.Url})
+	if err != nil {
+		return nil, errors.Wrap(err, "")
+	}
 	defer page.Close()
 
 	lastTimestamp := time.Now().Unix()
