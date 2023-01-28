@@ -46,7 +46,7 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 
 		v, ok := a.routeMap.Load(fullPath)
 		if !ok {
-			c.JSON(http.StatusOK, "")
+			c.JSON(http.StatusAccepted, "")
 		}
 		r := v.(*types.ResponseResult)
 
@@ -70,8 +70,7 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		switch contentType {
 		case types.ApplicationJson:
 			c.JSON(r.Status, data)
-		case types.ImagePng:
-		case types.ImageJpeg:
+		case types.ImagePng, types.ImageJpeg:
 			c.Data(r.Status, contentType, data)
 		default:
 			c.File(p)
