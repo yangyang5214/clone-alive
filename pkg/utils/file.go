@@ -15,3 +15,11 @@ func ReadFile(filePath string) ([]byte, error) {
 	}
 	return f, nil
 }
+
+func IsExist(p string) bool {
+	_, err := os.Stat(p)
+	if err != nil {
+		return false
+	}
+	return true
+}

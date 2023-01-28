@@ -21,4 +21,5 @@ type ResponseResult struct {
 	Body                string    `json:"body"`
 	Status              int       `json:"status"`
 	Error               string    `json:"error,omitempty"`
+	Depth               int       `json:"depth"`
 }

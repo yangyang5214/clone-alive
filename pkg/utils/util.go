@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -13,7 +14,21 @@ func IsURL(url string) bool {
 
 func GetUrlPath(u string) string {
 	urlParsed, _ := url.Parse(u)
-	return urlParsed.Path
+	p := urlParsed.Path
+	if p == "" {
+		p = "/"
+	}
+	return p
+}
+
+func GetUrlHost(u string) string {
+	urlParsed, _ := url.Parse(u)
+	return urlParsed.Host
+}
+
+func GetDomain(u string) string {
+	urlParsed, _ := url.Parse(u)
+	return fmt.Sprintf("%s://%s", urlParsed.Scheme, urlParsed.Host)
 }
 
 func IsSameURL(u1 string, u2 string) bool {

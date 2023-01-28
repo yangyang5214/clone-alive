@@ -14,7 +14,9 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -36,13 +38,15 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		fileName := fullPath
 		if fullPath == "/" {
 			fileName = "index.html"
+		} else if strings.HasSuffix(fullPath, "/") {
+			fileName = path.Join(fullPath, "index.html")
 		}
 
 		p := filepath.Join(a.option.HomeDir, fileName)
 
 		v, ok := a.routeMap.Load(fullPath)
 		if !ok {
-			c.JSON(http.StatusOK, "")
+			c.JSON(http.StatusAccepted, "")
 		}
 		r := v.(*types.ResponseResult)
 
@@ -66,8 +70,7 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		switch contentType {
 		case types.ApplicationJson:
 			c.JSON(r.Status, data)
-		case types.ImagePng:
-		case types.ImageJpeg:
+		case types.ImagePng, types.ImageJpeg:
 			c.Data(r.Status, contentType, data)
 		default:
 			c.File(p)
@@ -96,9 +99,6 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 		}
 
 		urlPath := utils.GetUrlPath(resp.Url)
-		if urlPath == "" {
-			urlPath = "/"
-		}
 		_, ok := a.routeMap.Load(urlPath)
 		if ok {
 			continue
@@ -132,5 +132,7 @@ func (a *Alive) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	return r.Run(fmt.Sprintf(":%d", a.option.Port))
+	server := fmt.Sprintf(":%d", a.option.Port)
+	gologger.Info().Msgf("Alive server start with 127.0.0.1%s", server)
+	return r.Run(server)
 }

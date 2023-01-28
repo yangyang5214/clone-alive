@@ -16,6 +16,7 @@ import (
 	"github.com/shirou/gopsutil/v3/process"
 	"github.com/yangyang5214/clone-alive/pkg/magic"
 	"github.com/yangyang5214/clone-alive/pkg/output"
+	"github.com/yangyang5214/clone-alive/pkg/parser"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"go.uber.org/multierr"
@@ -34,13 +35,19 @@ type Crawler struct {
 	browser      *rod.Browser
 	tempDir      string
 	targetDir    string
+	rootHost     string
+	domain       string
+	pendingQueue stack.Stack
+	urlMap       sync.Map
+	mu           sync.Mutex
 	option       types.Options
 	expandClient *magic.ExpandVerifyCode
 	outputWriter output.Writer
-	previousPIDs map[int32]struct{} // track already running PIDs
+	previousPIDs map[int32]struct {
+	} // track already running PIDs
 }
 
-//New is created new Crawler
+// New is created new Crawler
 func New(options *types.Options) (*Crawler, error) {
 	if options.Url == "" {
 		return nil, errors.Errorf("Url missing")
@@ -115,16 +122,44 @@ func New(options *types.Options) (*Crawler, error) {
 		targetDir:    targetDir,
 		outputWriter: outputWriter,
 		expandClient: magic.NewExpand(),
+		rootHost:     utils.GetUrlHost(options.Url),
+		domain:       utils.GetDomain(options.Url),
+		pendingQueue: *stack.New(),
+		urlMap:       sync.Map{},
+		mu:           sync.Mutex{},
 	}, nil
 }
 
-//Crawl crawls a URL with the specified options
+func (c *Crawler) isCrawled(urlStr string) bool {
+	urls := []string{
+		urlStr, urlStr + "/", strings.TrimRight(urlStr, "/"),
+	}
+	for _, item := range urls {
+		_, exist := c.urlMap.Load(item)
+		if exist {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *Crawler) AddNewUrl(request types.Request) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.isCrawled(request.Url) {
+		return false
+	}
+	c.pendingQueue.Push(request)
+	c.urlMap.Store(request.Url, true)
+	return true
+}
+
+// Crawl crawls a URL with the specified options
 func (c *Crawler) Crawl(rootURL string) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	ctx, cancel = context.WithTimeout(ctx, time.Duration(c.option.MaxDuration)*time.Second)
 	defer cancel()
 
-	urlParsed, _ := url.Parse(rootURL)
 	browserInstance, err := c.browser.Incognito()
 	if err != nil {
 		panic(err)
@@ -133,21 +168,19 @@ func (c *Crawler) Crawl(rootURL string) error {
 	wg := sizedwaitgroup.New(c.option.Concurrent)
 	running := int32(0)
 
-	pendingQueue := stack.New()
-
-	pendingQueue.Push(types.Request{
-		Url:       rootURL,
-		UrlParsed: urlParsed,
+	c.AddNewUrl(types.Request{
+		Url:   rootURL,
+		Depth: 0,
 	})
-	callback := c.navigateCallback(pendingQueue)
+	callback := c.navigateCallback()
 
 	for {
-		if !(atomic.LoadInt32(&running) > 0) && (pendingQueue.Size() == 0) {
+		if !(atomic.LoadInt32(&running) > 0) && (c.pendingQueue.Size() == 0) {
 			gologger.Info().Msg("Url pending queue is empty, break")
 			break
 		}
 
-		item, ok := pendingQueue.Pop()
+		item, ok := c.pendingQueue.Pop()
 		if !ok {
 			continue
 		}
@@ -161,7 +194,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 			defer wg.Done()
 			defer atomic.AddInt32(&running, -1)
 
-			err := c.navigateRequest(browserInstance, req, callback, urlParsed.Host)
+			resp, err := c.navigateRequest(browserInstance, req)
 			if err != nil {
 				errResult := types.ResponseResult{
 					Timestamp: time.Now(),
@@ -169,7 +202,9 @@ func (c *Crawler) Crawl(rootURL string) error {
 					Error:     err.Error(),
 				}
 				_ = c.outputWriter.Write(errResult)
+				return
 			}
+			parser.ParseResponse(*resp, callback)
 		}()
 	}
 
@@ -178,9 +213,39 @@ func (c *Crawler) Crawl(rootURL string) error {
 	return nil
 }
 
-//navigateRequest is process single url
-func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callback func(r types.Request), rootHost string) error {
-	page := browser.MustPage(req.Url)
+// navigateCallback is add new url to queue
+func (c *Crawler) navigateCallback() func(req types.Request) {
+	return func(req types.Request) {
+		if !utils.IsURL(req.Url) {
+			resultUrl, err := url.JoinPath(c.domain, req.Url)
+			if err != nil {
+				return
+			}
+			req.Url = resultUrl
+		}
+		if strings.Contains(req.Url, "javascript:") {
+			return
+		}
+		urlParsed, err := url.Parse(req.Url)
+		if err != nil {
+			return
+		}
+		if urlParsed.Host != c.rootHost {
+			return
+		}
+		if c.AddNewUrl(req) {
+			gologger.Info().Msgf("find new url %s, depth %d", req.Url, req.Depth)
+		}
+	}
+}
+
+// navigateRequest is process single url
+func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*types.Response, error) {
+	page, err := browser.Page(proto.TargetCreateTarget{URL: req.Url})
+	if err != nil {
+		return nil, errors.Wrap(err, "")
+	}
+	defer page.Close()
 
 	lastTimestamp := time.Now().Unix()
 
@@ -204,12 +269,15 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			}
 		}
 		_url := request.URL
+		if c.isCrawled(_url) {
+			return
+		}
 		urlParsed, err := url.Parse(_url)
 		if err != nil {
 			return
 		}
 
-		if urlParsed.Host != rootHost {
+		if urlParsed.Host != c.rootHost {
 			return // 外部站点
 		}
 
@@ -235,6 +303,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			HttpMethod:          request.Method,
 			RequestContentType:  requestContentTypeVal.(string),
 			ResponseContentType: response.MIMEType,
+			Depth:               req.Depth + 1,
 		}
 
 		var expandResult = c.expandClient.Run(_url, contentType)
@@ -280,16 +349,16 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 	page.MustReload() //reload page
 
 	for {
-		if time.Now().Unix()-lastTimestamp > 3 {
+		if time.Now().Unix()-lastTimestamp > 5 {
 			break
 		}
-		time.Sleep(1)
+		time.Sleep(time.Millisecond * 300)
 	}
 
 	if resp == nil {
 		html, err := page.HTML()
 		if err != nil {
-			return errors.Wrap(err, "could not get html")
+			return nil, errors.Wrap(err, "could not get html")
 		}
 		resp = &types.ResponseResult{
 			Timestamp:           time.Now(),
@@ -298,22 +367,27 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request, callb
 			Status:              http.StatusOK,
 			ResponseContentType: types.TextHtml,
 			HttpMethod:          http.MethodGet,
+			Depth:               req.Depth + 1,
 		}
 	}
 
-	if resp.ResponseContentType == types.TextHtml {
-		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", req.UrlParsed.Host+".png"))
+	if resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
+		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
 	}
 	c.log(resp)
-	return nil
+	return &types.Response{
+		Body:  resp.Body,
+		Depth: req.Depth + 1,
+	}, nil
 }
 
 func (c *Crawler) log(result *types.ResponseResult) {
+	c.urlMap.Store(result.Url, true)
 	_ = c.outputWriter.Write(*result)
 	c.saveFile(utils.GetUrlPath(result.Url), result)
 	if utils.IsSameURL(result.Url, c.option.Url) {
 		parsed, _ := url.Parse(result.Url)
-		result.Url = fmt.Sprintf("%s://%s", parsed.Scheme, parsed.Host)
+		result.Url = fmt.Sprintf(`%s://%s`, parsed.Scheme, parsed.Host)
 		_ = c.outputWriter.Write(*result)
 		c.saveFile("index.html", result)
 	}
@@ -327,20 +401,28 @@ func (c *Crawler) locationHref(page *rod.Page) (string, error) {
 	return res.Value.String(), nil
 }
 
-//getScrollHeight it is get 'document.body.scrollHeight'
+// getScrollHeight it is get 'document.body.scrollHeight'
 func (c *Crawler) getScrollHeight(page *rod.Page) int {
 	res, _ := page.Eval(`document.body.scrollHeight`)
 	return res.Value.Int()
 }
 
-//saveFile it's save data to file
+// saveFile it's save data to file
 func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	var data interface{}
 	data = resp.Body
-	if urlPath == "" || urlPath == "/" {
-		urlPath = "index.html"
-	}
+
 	paths := []string{c.targetDir, urlPath}
+
+	//https://github.com/yangyang5214/clone-alive/issues/15
+	if resp.ResponseContentType == "text/html" && urlPath != "index.html" {
+		paths = append(paths, "index.html")
+	}
+
+	//replace original url
+	resp.Body = strings.Replace(resp.Body, c.domain, "", -1)
+	resp.Body = strings.Replace(resp.Body, c.rootHost, "", -1)
+	resp.Body = strings.Replace(resp.Body, strings.Split(c.rootHost, ":")[0], "", -1)
 
 	if strings.HasPrefix(resp.ResponseContentType, "image") {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
@@ -348,13 +430,6 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	err := rod_util.OutputFile(filepath.Join(paths...), data)
 	if err != nil {
 		gologger.Error().Msgf("OutputFile error: %s", err.Error())
-	}
-}
-
-//navigateCallback is add new url to queue //todo
-func (c *Crawler) navigateCallback(queue *stack.Stack) func(r types.Request) {
-	return func(r types.Request) {
-
 	}
 }
 
