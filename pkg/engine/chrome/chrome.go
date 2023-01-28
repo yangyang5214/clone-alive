@@ -223,7 +223,11 @@ func (c *Crawler) navigateCallback() func(req types.Request) {
 			}
 			req.Url = resultUrl
 		}
+<<<<<<< HEAD
 		if strings.Contains(req.Url, "javascript:void") {
+=======
+		if strings.Contains(req.Url, "javascript:") {
+>>>>>>> 6d21837 (skip url xxxx/javascript:void)
 			return
 		}
 		urlParsed, err := url.Parse(req.Url)
