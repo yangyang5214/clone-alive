@@ -14,7 +14,9 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -36,6 +38,8 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		fileName := fullPath
 		if fullPath == "/" {
 			fileName = "index.html"
+		} else if strings.HasSuffix(fullPath, "/") {
+			fileName = path.Join(fullPath, "index.html")
 		}
 
 		p := filepath.Join(a.option.HomeDir, fileName)
@@ -96,9 +100,6 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 		}
 
 		urlPath := utils.GetUrlPath(resp.Url)
-		if urlPath == "" {
-			urlPath = "/"
-		}
 		_, ok := a.routeMap.Load(urlPath)
 		if ok {
 			continue

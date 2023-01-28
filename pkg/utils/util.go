@@ -14,7 +14,11 @@ func IsURL(url string) bool {
 
 func GetUrlPath(u string) string {
 	urlParsed, _ := url.Parse(u)
-	return urlParsed.Path
+	p := urlParsed.Path
+	if p == "" {
+		p = "/"
+	}
+	return p
 }
 
 func GetUrlHost(u string) string {

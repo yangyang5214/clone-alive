@@ -39,6 +39,7 @@ type Crawler struct {
 	domain       string
 	pendingQueue stack.Stack
 	urlMap       sync.Map
+	mu           sync.Mutex
 	option       types.Options
 	expandClient *magic.ExpandVerifyCode
 	outputWriter output.Writer
@@ -125,20 +126,28 @@ func New(options *types.Options) (*Crawler, error) {
 		domain:       utils.GetDomain(options.Url),
 		pendingQueue: *stack.New(),
 		urlMap:       sync.Map{},
+		mu:           sync.Mutex{},
 	}, nil
 }
 
-func (c *Crawler) isCrawled(urlStr string) (exist bool) {
-	_, exist = c.urlMap.Load(urlStr)
-	return
+func (c *Crawler) isCrawled(urlStr string) bool {
+	urls := []string{
+		urlStr, urlStr + "/", strings.TrimRight(urlStr, "/"),
+	}
+	for _, item := range urls {
+		_, exist := c.urlMap.Load(item)
+		if exist {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Crawler) AddNewUrl(request types.Request) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	if c.isCrawled(request.Url) {
 		return false
-	}
-	if strings.HasSuffix(request.Url, "/") {
-		request.Url = request.Url[:len(request.Url)-1]
 	}
 	c.pendingQueue.Push(request)
 	c.urlMap.Store(request.Url, true)
@@ -161,7 +170,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 
 	c.AddNewUrl(types.Request{
 		Url:   rootURL,
-		Depth: 1,
+		Depth: 0,
 	})
 	callback := c.navigateCallback()
 
@@ -356,7 +365,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		}
 	}
 
-	if resp.ResponseContentType == types.TextHtml {
+	if resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
 		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
 	}
 	c.log(resp)
@@ -396,10 +405,16 @@ func (c *Crawler) getScrollHeight(page *rod.Page) int {
 func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	var data interface{}
 	data = resp.Body
-	if urlPath == "" || urlPath == "/" {
-		urlPath = "index.html"
-	}
+
 	paths := []string{c.targetDir, urlPath}
+
+	//https://github.com/yangyang5214/clone-alive/issues/15
+	if resp.ResponseContentType == "text/html" && urlPath != "index.html" {
+		paths = append(paths, "index.html")
+	}
+
+	//replace original url
+	resp.Body = strings.Replace(resp.Body, c.domain, "", -1)
 
 	if strings.HasPrefix(resp.ResponseContentType, "image") {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
