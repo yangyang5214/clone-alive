@@ -418,6 +418,8 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 
 	//replace original url
 	resp.Body = strings.Replace(resp.Body, c.domain, "", -1)
+	resp.Body = strings.Replace(resp.Body, c.rootHost, "", -1)
+	resp.Body = strings.Replace(resp.Body, strings.Split(c.rootHost, ":")[0], "", -1)
 
 	if strings.HasPrefix(resp.ResponseContentType, "image") {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
