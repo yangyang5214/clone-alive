@@ -27,6 +27,11 @@ type Alive struct {
 	routeMap sync.Map
 }
 
+type RouteResp struct {
+	Path string
+	Resp *types.ResponseResult
+}
+
 func New(option types.AliveOption) *Alive {
 	return &Alive{
 		option:   option,
@@ -34,24 +39,62 @@ func New(option types.AliveOption) *Alive {
 	}
 }
 
+// loadResp is parse ResponseResult by route path/url
+// https://github.com/yangyang5214/clone-alive/issues/19
+func (a *Alive) loadResp(routePath string) *RouteResp {
+	fileName := routePath
+	if routePath == "/" {
+		fileName = "index.html"
+	} else if strings.HasSuffix(routePath, "/") {
+		fileName = path.Join(routePath, "index.html")
+	}
+
+	v, ok := a.routeMap.Load(routePath)
+	if !ok {
+		return nil
+	}
+	r := v.(*types.ResponseResult)
+
+	p := filepath.Join(a.option.HomeDir, fileName)
+	if !utils.IsFileExist(p) {
+
+		if magic.Hit(routePath, r.ResponseContentType) {
+			fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), r.ResponseContentType)
+			p = filepath.Join(a.option.HomeDir, fileName)
+		}
+	}
+
+	if !utils.IsFileExist(p) && r.ResponseContentType == types.TextHtml {
+		p = filepath.Join(p, "index.html")
+	}
+
+	if !utils.IsFileExist(p) {
+		return nil
+	}
+
+	return &RouteResp{
+		Resp: r,
+		Path: p,
+	}
+}
+
 func (a *Alive) handleRoute() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fullPath := c.FullPath()
-		fileName := fullPath
-		if fullPath == "/" {
-			fileName = "index.html"
-		} else if strings.HasSuffix(fullPath, "/") {
-			fileName = path.Join(fullPath, "index.html")
+
+		//fullPath => /login.action
+		//Request.RequestURI => /login.action?language=da_DK
+		routeResp := a.loadResp(c.Request.RequestURI)
+		if routeResp == nil {
+			routeResp = a.loadResp(fullPath)
 		}
 
-		p := filepath.Join(a.option.HomeDir, fileName)
-
-		v, ok := a.routeMap.Load(fullPath)
-		if !ok {
+		if routeResp == nil {
 			c.JSON(http.StatusNotFound, nil)
 			return
 		}
-		r := v.(*types.ResponseResult)
+		r := routeResp.Resp
+		p := routeResp.Path
 
 		contentType := r.RequestContentType
 		if contentType == "" || contentType == "<nil>" {
@@ -59,11 +102,6 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		}
 		contentType = types.ConvertContentType(contentType)
 		c.Header("Content-Type", contentType)
-
-		if magic.Hit(fullPath, contentType) {
-			fileName = magic.RebuildUrl(fullPath, rand.Intn(magic.RetryCount), contentType)
-			p = filepath.Join(a.option.HomeDir, fileName)
-		}
 
 		data, err := utils.ReadFile(p)
 		if err != nil {
