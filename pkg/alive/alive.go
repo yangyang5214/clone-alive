@@ -14,10 +14,12 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 type Alive struct {
@@ -119,7 +121,19 @@ func (a *Alive) check() error {
 	return nil
 }
 
+func cleanup() {
+
+}
+
 func (a *Alive) Run() (err error) {
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		cleanup()
+		os.Exit(1)
+	}()
+
 	err = a.check()
 	if err != nil {
 		return err
