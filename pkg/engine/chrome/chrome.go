@@ -374,11 +374,28 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	if resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
 		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
 	}
+
+	locationHref, _ := c.locationHref(page)
+
+	//listen url changed
+	go func() {
+		_locationHref, _ := c.locationHref(page)
+		if locationHref != _locationHref {
+			page.MustNavigateBack()
+		}
+	}()
+
 	c.log(resp)
+
+	c.clickElement(page)
 	return &types.Response{
 		Body:  resp.Body,
 		Depth: req.Depth + 1,
 	}, nil
+}
+
+func (c *Crawler) clickElement(page *rod.Page) {
+	//c.clickSelect(page)
 }
 
 func (c *Crawler) log(result *types.ResponseResult) {
@@ -399,6 +416,32 @@ func (c *Crawler) locationHref(page *rod.Page) (string, error) {
 		return "", err
 	}
 	return res.Value.String(), nil
+}
+
+// todo 未生效
+func (c *Crawler) clickSelect(p *rod.Page) error {
+	selects, err := p.ElementsX("//select")
+	if err != nil {
+		return err
+	}
+	for _, selectElm := range selects {
+		options, err := selectElm.ElementsX("//option")
+		if err != nil {
+			return err
+		}
+		for _, item := range options {
+			err = selectElm.Click(proto.InputMouseButtonLeft, 1)
+			if err != nil {
+				gologger.Error().Msgf("click select element error, %s", err.Error())
+			}
+			time.Sleep(1)
+			err = item.Click(proto.InputMouseButtonLeft, 1)
+			if err != nil {
+				gologger.Error().Msgf("click select -> options element error, %s", err.Error())
+			}
+		}
+	}
+	return nil
 }
 
 // getScrollHeight it is get 'document.body.scrollHeight'
