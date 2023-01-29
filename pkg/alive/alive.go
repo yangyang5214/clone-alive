@@ -48,7 +48,8 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 
 		v, ok := a.routeMap.Load(fullPath)
 		if !ok {
-			c.JSON(http.StatusAccepted, "")
+			c.JSON(http.StatusNotFound, nil)
+			return
 		}
 		r := v.(*types.ResponseResult)
 
@@ -66,7 +67,8 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 
 		data, err := utils.ReadFile(p)
 		if err != nil {
-			c.JSON(http.StatusOK, "")
+			c.JSON(http.StatusOK, nil)
+			return
 		}
 
 		switch contentType {
@@ -106,6 +108,10 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 			continue
 		}
 		engine.Handle(resp.HttpMethod, urlPath, a.handleRoute())
+		//https://github.com/yangyang5214/clone-alive/issues/18
+		if strings.HasSuffix(urlPath, "woff2") {
+			engine.Handle(resp.HttpMethod, urlPath[:len(urlPath)-1], a.handleRoute())
+		}
 		a.routeMap.Store(urlPath, resp)
 	}
 	return nil
