@@ -374,7 +374,18 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	if resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
 		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
 	}
+
+	locationHref, err := c.locationHref(page)
+	if err != nil {
+		gologger.Error().Msgf("Get locationHref error. %s", req.Url)
+	} else {
+		gologger.Info().Msgf("locationHref is %s", locationHref)
+	}
 	c.log(resp)
+	if !utils.IsSameURL(locationHref, req.Url) {
+		resp.Url = locationHref
+		c.log(resp)
+	}
 	return &types.Response{
 		Body:  resp.Body,
 		Depth: req.Depth + 1,
