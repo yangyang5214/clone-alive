@@ -28,6 +28,9 @@ func Hit(urlPath string, contentType string) bool {
 	if strings.Contains(urlPath, "verifycode") {
 		return true
 	}
+	if strings.Contains(urlPath, "getCode") {
+		return true
+	}
 	return false
 }
 

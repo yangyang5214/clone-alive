@@ -32,18 +32,19 @@ import (
 )
 
 type Crawler struct {
-	browser      *rod.Browser
-	tempDir      string
-	targetDir    string
-	rootHost     string
-	domain       string
-	pendingQueue stack.Stack
-	urlMap       sync.Map
-	mu           sync.Mutex
-	option       types.Options
-	expandClient *magic.ExpandVerifyCode
-	outputWriter output.Writer
-	previousPIDs map[int32]struct {
+	browser       *rod.Browser
+	tempDir       string
+	targetDir     string
+	rootHost      string
+	domain        string
+	pendingQueue  stack.Stack
+	urlMap        sync.Map
+	mu            sync.Mutex
+	option        types.Options
+	expandClient  *magic.ExpandVerifyCode
+	attributeMock *magic.Attribute
+	outputWriter  output.Writer
+	previousPIDs  map[int32]struct {
 	} // track already running PIDs
 }
 
@@ -115,18 +116,19 @@ func New(options *types.Options) (*Crawler, error) {
 
 	previousPIDs := findChromeProcesses()
 	return &Crawler{
-		option:       *options,
-		browser:      browser,
-		previousPIDs: previousPIDs,
-		tempDir:      dataStore,
-		targetDir:    targetDir,
-		outputWriter: outputWriter,
-		expandClient: magic.NewExpand(),
-		rootHost:     utils.GetUrlHost(options.Url),
-		domain:       utils.GetDomain(options.Url),
-		pendingQueue: *stack.New(),
-		urlMap:       sync.Map{},
-		mu:           sync.Mutex{},
+		option:        *options,
+		browser:       browser,
+		previousPIDs:  previousPIDs,
+		tempDir:       dataStore,
+		targetDir:     targetDir,
+		outputWriter:  outputWriter,
+		expandClient:  magic.NewExpand(),
+		rootHost:      utils.GetUrlHost(options.Url),
+		domain:        utils.GetDomain(options.Url),
+		pendingQueue:  *stack.New(),
+		urlMap:        sync.Map{},
+		mu:            sync.Mutex{},
+		attributeMock: magic.NewAttribute(),
 	}, nil
 }
 
@@ -245,6 +247,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
+	page = page.Timeout(time.Duration(c.option.Timeout) * time.Second)
 	defer page.Close()
 
 	lastTimestamp := time.Now().Unix()
@@ -341,18 +344,14 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		}
 	})()
 
-	page.MustWaitNavigation()
-	page.Timeout(time.Duration(c.option.Timeout) * time.Second)
-	page.MustWaitLoad()
-	page.MustWaitIdle()
-
-	page.MustReload() //reload page
-
-	for {
-		if time.Now().Unix()-lastTimestamp > 5 {
-			break
-		}
-		time.Sleep(time.Millisecond * 300)
+	err = rod.Try(func() {
+		page.MustWaitNavigation()
+		page.MustWaitLoad()
+		page.MustWaitIdle()
+		page.MustReload() //reload page
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "wait load error")
 	}
 
 	if resp == nil {
@@ -371,8 +370,11 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		}
 	}
 
+	c.waitLoaded(lastTimestamp)
 	if resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
-		page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
+		_ = rod.Try(func() {
+			page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
+		})
 	}
 
 	locationHref, err := c.locationHref(page)
@@ -386,10 +388,57 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		resp.Url = locationHref
 		c.log(resp)
 	}
+
+	c.processLoginForm(page)
+
+	c.waitLoaded(lastTimestamp)
+
 	return &types.Response{
 		Body:  resp.Body,
 		Depth: req.Depth + 1,
 	}, nil
+}
+
+func (c *Crawler) waitLoaded(timestamp int64) {
+	for {
+		if time.Now().Unix()-timestamp > 5 {
+			break
+		}
+		time.Sleep(time.Millisecond * 300)
+	}
+}
+
+func (c *Crawler) processLoginForm(page *rod.Page) {
+	_ = rod.Try(func() {
+		forms := page.MustElementsX("//form")
+		for _, formElement := range forms {
+			inputs := formElement.MustElementsX("//input")
+			if len(inputs) == 0 {
+				continue
+			}
+			for _, inputElement := range inputs {
+				attributeType := inputElement.MustAttribute("type")
+				if *attributeType == magic.INPUT {
+					attributeType = inputElement.MustAttribute("name")
+				}
+				v := c.attributeMock.MockValue(*attributeType)
+				if v == "" {
+					continue
+				}
+				_ = inputElement.Input(v)
+				time.Sleep(3)
+			}
+
+			for _, loginXpath := range magic.LoginXpaths {
+				el, err := formElement.ElementX(loginXpath)
+				if err != nil {
+					continue
+				}
+				_ = el.Click(proto.InputMouseButtonLeft, 1)
+			}
+
+		}
+	})
 }
 
 func (c *Crawler) log(result *types.ResponseResult) {
