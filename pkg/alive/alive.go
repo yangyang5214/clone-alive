@@ -64,8 +64,8 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 		}
 	}
 
-	if !utils.IsFileExist(p) && r.ResponseContentType == types.TextHtml {
-		p = filepath.Join(p, "index.html")
+	if !utils.IsFileExist(p) {
+		p = p + "." + types.ConvertFileName(r.ResponseContentType)
 	}
 
 	if !utils.IsFileExist(p) {
@@ -111,7 +111,7 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 
 		switch contentType {
 		case types.ApplicationJson:
-			c.JSON(r.Status, data)
+			c.Data(r.Status, types.ApplicationJson, data)
 		case types.ImagePng, types.ImageJpeg:
 			c.Data(r.Status, contentType, data)
 		default:

@@ -305,7 +305,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 			Status:              response.Status,
 			HttpMethod:          request.Method,
 			RequestContentType:  requestContentTypeVal.(string),
-			ResponseContentType: response.MIMEType,
+			ResponseContentType: contentType,
 			Depth:               req.Depth + 1,
 		}
 
@@ -370,7 +370,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		}
 	}
 
-	c.waitLoaded(lastTimestamp)
+	c.waitLoaded(lastTimestamp, 5)
 	if resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
 		_ = rod.Try(func() {
 			page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
@@ -391,7 +391,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 
 	c.processLoginForm(page)
 
-	c.waitLoaded(lastTimestamp)
+	c.waitLoaded(lastTimestamp, 10)
 
 	return &types.Response{
 		Body:  resp.Body,
@@ -399,9 +399,9 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	}, nil
 }
 
-func (c *Crawler) waitLoaded(timestamp int64) {
+func (c *Crawler) waitLoaded(timestamp int64, interval int64) {
 	for {
-		if time.Now().Unix()-timestamp > 5 {
+		if time.Now().Unix()-timestamp > interval {
 			break
 		}
 		time.Sleep(time.Millisecond * 300)
@@ -418,7 +418,7 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 			}
 			for _, inputElement := range inputs {
 				attributeType := inputElement.MustAttribute("type")
-				if *attributeType == magic.INPUT {
+				if c.attributeMock.IsIgnore(*attributeType) {
 					attributeType = inputElement.MustAttribute("name")
 				}
 				v := c.attributeMock.MockValue(*attributeType)
@@ -475,8 +475,11 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	paths := []string{c.targetDir, urlPath}
 
 	//https://github.com/yangyang5214/clone-alive/issues/15
-	if resp.ResponseContentType == "text/html" && urlPath != "index.html" {
-		paths = append(paths, "index.html")
+	urlPaths := strings.Split(urlPath, "/")
+	lastPath := urlPaths[len(urlPaths)-1]
+	if !strings.Contains(lastPath, ".") {
+		fileNameSuffix := types.ConvertFileName(resp.ResponseContentType)
+		paths[len(paths)-1] = paths[len(paths)-1] + "." + fileNameSuffix
 	}
 
 	//replace original url
@@ -503,7 +506,9 @@ func (c *Crawler) Close() error {
 		return err
 	}
 
-	_ = c.outputWriter.Close()
+	if err := c.outputWriter.Close(); err != nil {
+		return err
+	}
 
 	return c.killChromeProcesses()
 }
