@@ -34,7 +34,7 @@ func New(options *types.Options) (*Runner, error) {
 		return nil, errors.Wrap(err, "could not create crawler engine")
 	}
 
-	gologger.Info().Msgf("Start crawler with <%s>", crawlerType)
+	gologger.Info().Msgf("Start crawler with <%s>, Site: %s", crawlerType, options.Url)
 	return &Runner{
 		option:  options,
 		crawler: crawler,
