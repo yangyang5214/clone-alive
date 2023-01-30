@@ -166,6 +166,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 	if err != nil {
 		panic(err)
 	}
+	browserInstance = browserInstance.Timeout(time.Duration(c.option.Timeout) * time.Second)
 
 	wg := sizedwaitgroup.New(c.option.Concurrent)
 	running := int32(0)
@@ -247,7 +248,6 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
-	page = page.Timeout(time.Duration(c.option.Timeout) * time.Second)
 	defer page.Close()
 
 	lastTimestamp := time.Now().Unix()
@@ -263,6 +263,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 
 		data, ok := requestMap.Load(e.RequestID)
 		if !ok {
+			gologger.Error().Msg("RequestID not exist, skip")
 			return
 		}
 		event := data.(*types.EventListen)
