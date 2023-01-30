@@ -263,7 +263,6 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 
 		data, ok := requestMap.Load(e.RequestID)
 		if !ok {
-			gologger.Error().Msg("RequestID not exist, skip")
 			return
 		}
 		event := data.(*types.EventListen)
