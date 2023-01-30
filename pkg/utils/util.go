@@ -2,7 +2,8 @@ package utils
 
 import (
 	"fmt"
-	"io/ioutil"
+	"github.com/projectdiscovery/gologger"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -38,12 +39,14 @@ func IsSameURL(u1 string, u2 string) bool {
 func DoHttpReq(req *http.Request, httpClient *http.Client) []byte {
 	resp, err := httpClient.Do(req)
 	if err != nil {
+		gologger.Error().Msgf("DoHttpReq error %s", err.Error())
 		return nil
 	}
 	if resp.StatusCode != 200 {
+		gologger.Error().Msgf("DoHttpReq error StatusCode %d", resp.StatusCode)
 		return nil
 	}
-	bytes, err := ioutil.ReadAll(resp.Body)
+	bytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil
 	}

@@ -2,6 +2,7 @@ package output
 
 import (
 	"bufio"
+	"github.com/projectdiscovery/gologger"
 	"os"
 )
 
@@ -34,8 +35,9 @@ func (w *FileWriter) Write(data []byte) error {
 
 // Close closes the underlying writer flushing everything to disk
 func (w *FileWriter) Close() error {
-	_ = w.writer.Flush()
-	//nolint:errcheck // we don't care whether sync failed or succeeded.
-	_ = w.file.Sync()
+	err := w.writer.Flush()
+	if err != nil {
+		gologger.Error().Msgf("writer flush error: %s", err.Error())
+	}
 	return w.file.Close()
 }

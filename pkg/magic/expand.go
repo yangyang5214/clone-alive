@@ -1,12 +1,15 @@
 package magic
 
 import (
+	"crypto/tls"
+	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const RetryCount = 30
@@ -21,15 +24,17 @@ type VerifyCodeResults struct {
 	Body   string
 }
 
+var partUrlPath = []string{
+	"verifycode", //http://58.56.78.6:81/pages/login.jsp
+	"getCode",
+	"login/code", ////http://10.0.81.29:8001/
+}
+
 func Hit(urlPath string, contentType string) bool {
-	if !strings.HasPrefix(contentType, "image") {
-		return false
-	}
-	if strings.Contains(urlPath, "verifycode") {
-		return true
-	}
-	if strings.Contains(urlPath, "getCode") {
-		return true
+	for _, item := range partUrlPath {
+		if strings.Contains(urlPath, item) {
+			return true
+		}
 	}
 	return false
 }
@@ -53,6 +58,7 @@ func (e *ExpandVerifyCode) Run(urlStr string, contentType string) []*VerifyCodeR
 	for i := 0; i < e.retryCount; i++ {
 		respBody := utils.DoHttpReq(req, e.httpClient)
 		if respBody == nil {
+			gologger.Error().Msgf("Fetch http req failed: %s", urlStr)
 			continue
 		}
 		result = append(result, &VerifyCodeResults{
@@ -64,8 +70,13 @@ func (e *ExpandVerifyCode) Run(urlStr string, contentType string) []*VerifyCodeR
 }
 
 func NewExpand() *ExpandVerifyCode {
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
 	return &ExpandVerifyCode{
-		httpClient: &http.Client{},
+		httpClient: &http.Client{
+			Transport: tr,
+			Timeout:   60 * time.Second},
 		retryCount: RetryCount,
 	}
 }

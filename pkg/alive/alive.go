@@ -1,6 +1,5 @@
 package alive
 
-import "C"
 import (
 	"bufio"
 	"encoding/json"

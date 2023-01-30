@@ -257,8 +257,13 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	requestMap := sync.Map{}
 
 	go page.EachEvent(func(e *proto.NetworkLoadingFinished) {
+		defer func() {
+			lastTimestamp = time.Now().Unix()
+		}()
+
 		data, ok := requestMap.Load(e.RequestID)
 		if !ok {
+			gologger.Error().Msg("RequestID not exist, skip")
 			return
 		}
 		event := data.(*types.EventListen)
@@ -281,53 +286,58 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		}
 
 		if urlParsed.Host != c.rootHost {
+			gologger.Debug().Msgf("out of site url %s, skip", _url)
 			return // 外部站点
 		}
 
-		m := proto.NetworkGetResponseBody{RequestID: e.RequestID}
-		r, err := m.Call(page)
-		if err != nil {
-			return
-		}
-		contentType := response.MIMEType
-		urlPath := urlParsed.Path
-		gologger.Info().Msgf("【%s】 %s find --> %s", contentType, _url, urlPath)
-
-		requestContentTypeVal := request.Headers["Content-Type"].Val()
-		if requestContentTypeVal == nil {
-			requestContentTypeVal = ""
-		}
-
-		respResult := &types.ResponseResult{
-			Timestamp:           time.Now(),
-			Url:                 _url,
-			Body:                r.Body,
-			Status:              response.Status,
-			HttpMethod:          request.Method,
-			RequestContentType:  requestContentTypeVal.(string),
-			ResponseContentType: contentType,
-			Depth:               req.Depth + 1,
-		}
-
-		var expandResult = c.expandClient.Run(_url, contentType)
-		if expandResult == nil {
-			c.log(respResult)
-		} else {
-			for _, item := range expandResult {
-				itemResp := *respResult
-				itemResp.Body = item.Body
-				itemResp.Url = item.UrlStr
-				itemResp.ResponseContentType = ""
-				c.saveFile(utils.GetUrlPath(itemResp.Url), &itemResp)
+		go func() {
+			defer func() {
+				lastTimestamp = time.Now().Unix()
+			}()
+			m := proto.NetworkGetResponseBody{RequestID: e.RequestID}
+			r, err := m.Call(page)
+			if err != nil {
+				return
 			}
-			_ = c.outputWriter.Write(*respResult)
-		}
+			contentType := response.MIMEType
+			urlPath := urlParsed.Path
+			gologger.Info().Msgf("【%s】 %s find --> %s", contentType, _url, urlPath)
 
-		if utils.IsSameURL(_url, req.Url) {
-			resp = respResult
-		}
+			requestContentTypeVal := request.Headers["Content-Type"].Val()
+			if requestContentTypeVal == nil {
+				requestContentTypeVal = ""
+			}
 
-		lastTimestamp = time.Now().Unix()
+			respResult := &types.ResponseResult{
+				Timestamp:           time.Now(),
+				Url:                 _url,
+				Body:                r.Body,
+				Status:              response.Status,
+				HttpMethod:          request.Method,
+				RequestContentType:  requestContentTypeVal.(string),
+				ResponseContentType: contentType,
+				Depth:               req.Depth + 1,
+			}
+
+			var expandResult = c.expandClient.Run(_url, contentType)
+			if expandResult == nil {
+				c.log(respResult)
+			} else {
+				for _, item := range expandResult {
+					itemResp := *respResult
+					itemResp.Body = item.Body
+					itemResp.Url = item.UrlStr
+					itemResp.ResponseContentType = ""
+					c.saveFile(utils.GetUrlPath(itemResp.Url), &itemResp)
+				}
+				_ = c.outputWriter.Write(*respResult)
+			}
+
+			if utils.IsSameURL(_url, req.Url) {
+				resp = respResult
+			}
+		}()
+
 	}, func(e *proto.NetworkRequestWillBeSent) {
 		requestMap.Store(e.RequestID, &types.EventListen{
 			Request: e.Request,
@@ -391,7 +401,8 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 
 	c.processLoginForm(page)
 
-	c.waitLoaded(lastTimestamp, 10)
+	//一些请求是 解析 js 加载的，这里设置长一点
+	c.waitLoaded(lastTimestamp, 30)
 
 	return &types.Response{
 		Body:  resp.Body,
@@ -472,14 +483,22 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	var data interface{}
 	data = resp.Body
 
-	paths := []string{c.targetDir, urlPath}
+	if strings.HasSuffix(urlPath, "/") {
+		urlPath = urlPath[0 : len(urlPath)-1]
+	}
 
-	//https://github.com/yangyang5214/clone-alive/issues/15
-	urlPaths := strings.Split(urlPath, "/")
-	lastPath := urlPaths[len(urlPaths)-1]
-	if !strings.Contains(lastPath, ".") {
-		fileNameSuffix := types.ConvertFileName(resp.ResponseContentType)
-		paths[len(paths)-1] = paths[len(paths)-1] + "." + fileNameSuffix
+	var paths []string
+	if urlPath == "" {
+		paths = []string{c.targetDir, "index.html"}
+	} else {
+		paths = []string{c.targetDir, urlPath}
+		//https://github.com/yangyang5214/clone-alive/issues/15
+		urlPaths := strings.Split(urlPath, "/")
+		lastPath := urlPaths[len(urlPaths)-1]
+		if !strings.Contains(lastPath, ".") {
+			fileNameSuffix := types.ConvertFileName(resp.ResponseContentType)
+			paths[len(paths)-1] = paths[len(paths)-1] + "." + fileNameSuffix
+		}
 	}
 
 	//replace original url
