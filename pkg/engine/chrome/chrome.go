@@ -166,7 +166,6 @@ func (c *Crawler) Crawl(rootURL string) error {
 	if err != nil {
 		panic(err)
 	}
-	browserInstance = browserInstance.Timeout(time.Duration(c.option.Timeout) * time.Second)
 
 	wg := sizedwaitgroup.New(c.option.Concurrent)
 	running := int32(0)
@@ -244,11 +243,15 @@ func (c *Crawler) navigateCallback() func(req types.Request) {
 
 // navigateRequest is process single url
 func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*types.Response, error) {
-	page, err := browser.Page(proto.TargetCreateTarget{URL: req.Url})
+	var page *rod.Page
+	err := rod.Try(func() {
+		page = browser.MustPage(req.Url)
+	})
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
 	defer page.Close()
+	page = page.Timeout(time.Duration(c.option.Timeout))
 
 	lastTimestamp := time.Now().Unix()
 
