@@ -251,7 +251,8 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		return nil, errors.Wrap(err, "")
 	}
 	defer page.Close()
-	page = page.Timeout(time.Duration(c.option.Timeout))
+
+	page = page.Timeout(time.Duration(c.option.Timeout) * time.Second)
 
 	lastTimestamp := time.Now().Unix()
 

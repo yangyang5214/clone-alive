@@ -58,8 +58,13 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 	if !utils.IsFileExist(p) {
 
 		if magic.Hit(routePath, r.ResponseContentType) {
-			fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), r.ResponseContentType)
-			p = filepath.Join(a.option.HomeDir, fileName)
+			for i := 0; i < magic.RetryCount; i++ {
+				fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), r.ResponseContentType)
+				p = filepath.Join(a.option.HomeDir, fileName)
+				if utils.IsFileExist(p) {
+					break
+				}
+			}
 		}
 	}
 
