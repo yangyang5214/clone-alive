@@ -346,6 +346,8 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		requestMap.Store(e.RequestID, &types.EventListen{
 			Request: e.Request,
 		})
+	}, func(e *proto.NetworkRequestWillBeSentExtraInfo) {
+		//https://github.com/go-rod/rod/issues/351 目前没需求
 	}, func(e *proto.NetworkResponseReceived) {
 		data, ok := requestMap.Load(e.RequestID)
 		if !ok {
