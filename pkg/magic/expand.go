@@ -27,7 +27,8 @@ type VerifyCodeResults struct {
 var partUrlPath = []string{
 	"verifycode", //http://58.56.78.6:81/pages/login.jsp
 	"getCode",
-	"login/code", ////http://10.0.81.29:8001/
+	"servlets/vms", //http://58.250.50.115:5050/
+	"login/code",   //http://10.0.81.29:8001/
 }
 
 func Hit(urlPath string, contentType string) bool {

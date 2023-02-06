@@ -12,6 +12,7 @@ const (
 	password    AttributeType = "password"
 	text        AttributeType = "text"
 	hidden      AttributeType = "hidden"
+	login       AttributeType = "login"
 	input       AttributeType = "input"
 	user        AttributeType = "user"
 	checkbox    AttributeType = "checkbox"
@@ -45,18 +46,16 @@ func (a *Attribute) MockValue(typeStr string) string {
 		typeStr = user
 	}
 	switch typeStr {
-	case checkbox, submit:
-		return ""
-	case user:
-		return "clone-alive"
-	case hidden:
+	case checkbox, submit, hidden, login:
 		return ""
 	case email:
 		return "beer@beer.com"
+	case user:
+		return "clone-alive"
 	case password, text, queryString:
 		return "Clone-Alive_magic123~"
 	default:
-		gologger.Error().Msgf("Find New Attribute type %s", typeStr)
+		gologger.Info().Msgf("Find New Attribute type %s", typeStr)
 	}
 	return "Clone-Alive_magic123~"
 }
