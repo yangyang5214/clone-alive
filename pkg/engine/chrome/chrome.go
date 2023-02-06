@@ -358,6 +358,18 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 			event := data.(*types.EventListen)
 			event.Response = e.Response
 		}
+	}, func(e *proto.PageJavascriptDialogOpening) {
+		if e.Type == proto.PageDialogTypeAlert {
+			d := proto.PageHandleJavaScriptDialog{
+				Accept:     true,
+				PromptText: "",
+			}
+			err := d.Call(page)
+			if err != nil {
+				gologger.Error().Msgf("Closed PageDialogTypeAlert error: %s", err.Error())
+			}
+		}
+
 	})()
 
 	err = rod.Try(func() {
@@ -417,6 +429,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 }
 
 func (c *Crawler) waitLoaded(timestamp int64, interval int64) {
+	gologger.Info().Msgf("Start wait loading... %d", interval)
 	for {
 		if time.Now().Unix()-timestamp > interval {
 			break
@@ -428,6 +441,7 @@ func (c *Crawler) waitLoaded(timestamp int64, interval int64) {
 func (c *Crawler) processLoginForm(page *rod.Page) {
 	_ = rod.Try(func() {
 		forms := page.MustElementsX("//form")
+		gologger.Info().Msgf("find form size %d", len(forms))
 		for _, formElement := range forms {
 			inputs := formElement.MustElementsX("//input")
 			if len(inputs) == 0 {
@@ -443,7 +457,7 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 					continue
 				}
 				_ = inputElement.Input(v)
-				time.Sleep(3)
+				time.Sleep(1)
 			}
 
 			for _, loginXpath := range magic.LoginXpaths {
@@ -451,7 +465,11 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 				if err != nil {
 					continue
 				}
-				_ = el.Click(proto.InputMouseButtonLeft, 1)
+				err = el.Click(proto.InputMouseButtonLeft, 1)
+				if err != nil {
+					gologger.Error().Msg(err.Error())
+				}
+				break
 			}
 
 		}
