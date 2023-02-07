@@ -46,11 +46,11 @@ func (a *Attribute) MockValue(typeStr string) string {
 		typeStr = user
 	}
 	switch typeStr {
-	case checkbox, submit, hidden, login:
+	case checkbox, submit, hidden:
 		return ""
 	case email:
 		return "beer@beer.com"
-	case user:
+	case user, login:
 		return "clone-alive"
 	case password, text, queryString:
 		return "Clone-Alive_magic123~"
