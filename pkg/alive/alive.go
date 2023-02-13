@@ -85,6 +85,9 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 func (a *Alive) handleRoute() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fullPath := c.FullPath()
+		if fullPath == "" {
+			fullPath = strings.Split(c.Request.RequestURI, "?")[0]
+		}
 
 		//fullPath => /login.action
 		//Request.RequestURI => /login.action?language=da_DK
@@ -145,11 +148,11 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 		}
 
 		urlPath := utils.GetUrlPath(resp.Url)
-		_, ok := a.routeMap.Load(urlPath)
-		if ok {
-			continue
-		}
-		engine.Handle(resp.HttpMethod, urlPath, a.handleRoute())
+
+		// https://stackoverflow.com/questions/32443738/setting-up-route-not-found-in-gin/
+		engine.NoRoute(a.handleRoute())
+		//engine.Handle(resp.HttpMethod, urlPath, a.handleRoute())
+
 		//https://github.com/yangyang5214/clone-alive/issues/18
 		if strings.HasSuffix(urlPath, "woff2") {
 			engine.Handle(resp.HttpMethod, urlPath[:len(urlPath)-1], a.handleRoute())
