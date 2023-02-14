@@ -10,6 +10,7 @@ type ResponseParserFunc func(resp types.Response) []string
 
 var parsers = []ResponseParserFunc{
 	bodyATagParser,
+	bodyScriptSrcTagParser,
 	//bodyLinkHrefTagParser,
 	//bodyEmbedTagParser,
 	//bodyFrameTagParser,
@@ -50,6 +51,17 @@ func bodyATagParser(resp types.Response) (urls []string) {
 		ping, ok := item.Attr("ping")
 		if ok && ping != "" {
 			urls = append(urls, ping)
+		}
+	})
+	return urls
+}
+
+// bodyScriptSrcTagParser parses script src tag from response
+func bodyScriptSrcTagParser(resp types.Response) (urls []string) {
+	resp.Reader.Find("script[src]").Each(func(i int, item *goquery.Selection) {
+		src, ok := item.Attr("src")
+		if ok && src != "" {
+			urls = append(urls, src)
 		}
 	})
 	return urls
@@ -144,19 +156,7 @@ func bodyATagParser(resp types.Response) (urls []string) {
 //	})
 //}
 //
-//// bodyScriptSrcTagParser parses script src tag from response
-//func bodyScriptSrcTagParser(resp types.Response, callback func(types.Request)) {
-//	resp.Reader.Find("script[src]").Each(func(i int, item *goquery.Selection) {
-//		src, ok := item.Attr("src")
-//		if ok && src != "" {
-//			callback(types.Request{
-//				Url:   src,
-//				Depth: resp.Depth,
-//			})
-//		}
-//	})
-//}
-//
+
 //// bodyBackgroundTagParser parses body background tag from response
 //func bodyBackgroundTagParser(resp types.Response, callback func(types.Request)) {
 //	resp.Reader.Find("body[background]").Each(func(i int, item *goquery.Selection) {
