@@ -84,10 +84,7 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 
 func (a *Alive) handleRoute() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fullPath := c.FullPath()
-		if fullPath == "" {
-			fullPath = strings.Split(c.Request.RequestURI, "?")[0]
-		}
+		fullPath := strings.Split(c.Request.RequestURI, "?")[0]
 
 		//fullPath => /login.action
 		//Request.RequestURI => /login.action?language=da_DK

@@ -267,7 +267,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 
 		data, ok := requestMap.Load(e.RequestID)
 		if !ok {
-			gologger.Error().Msg("RequestID not exist, skip")
+			gologger.Warning().Msg("RequestID not exist, skip")
 			return
 		}
 		event := data.(*types.EventListen)
@@ -419,7 +419,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	c.processLoginForm(page)
 
 	//一些请求是 解析 js 加载的，这里设置长一点
-	c.waitLoaded(lastTimestamp, 30)
+	c.waitLoaded(lastTimestamp, 10)
 
 	return &types.Response{
 		Body:  resp.Body,
@@ -438,41 +438,49 @@ func (c *Crawler) waitLoaded(timestamp int64, interval int64) {
 }
 
 func (c *Crawler) processLoginForm(page *rod.Page) {
-	_ = rod.Try(func() {
-		forms := page.MustElementsX("//form")
-		gologger.Info().Msgf("find form size %d", len(forms))
-		for _, formElement := range forms {
-			inputs := formElement.MustElementsX("//input")
-			if len(inputs) == 0 {
+	forms, err := page.ElementsX("//form")
+	if err != nil {
+		return
+	}
+
+	gologger.Info().Msgf("find form size %d", len(forms))
+	for _, formElement := range forms {
+		inputs, err := formElement.ElementsX("//input")
+		if err != nil {
+			continue
+		}
+		if len(inputs) == 0 {
+			continue
+		}
+		gologger.Info().Msgf("Input element size %d", len(inputs))
+		for _, inputElement := range inputs {
+			v := c.attributeMock.MockValue(inputElement)
+			if v == "" {
+				gologger.Info().Msgf("MockValue is Empty, skip, %s", inputElement.String())
 				continue
 			}
-			for _, inputElement := range inputs {
-				attributeType := inputElement.MustAttribute("type")
-				if c.attributeMock.IsIgnore(*attributeType) {
-					attributeType = inputElement.MustAttribute("name")
-				}
-				v := c.attributeMock.MockValue(*attributeType)
-				if v == "" {
-					continue
-				}
-				_ = inputElement.Input(v)
-				time.Sleep(1)
+			gologger.Info().Msgf("Start input <%s> for %s", v, inputElement.String())
+			err := inputElement.Input(v)
+			if err != nil {
+				gologger.Error().Msgf("Type Input value error %s", err.Error())
 			}
-
-			for _, loginXpath := range magic.LoginXpaths {
-				el, err := formElement.ElementX(loginXpath)
-				if err != nil {
-					continue
-				}
-				err = el.Click(proto.InputMouseButtonLeft, 1)
-				if err != nil {
-					gologger.Error().Msg(err.Error())
-				}
-				break
-			}
-
+			time.Sleep(1)
 		}
-	})
+
+		for _, loginXpath := range c.attributeMock.LoginXpaths {
+			el, err := formElement.ElementX(loginXpath)
+			if err != nil {
+				continue
+			}
+			gologger.Info().Msgf("Start click by <%s>", loginXpath)
+			err = el.Click(proto.InputMouseButtonLeft, 1)
+			if err != nil {
+				gologger.Error().Msg(err.Error())
+			}
+			break
+		}
+
+	}
 }
 
 func (c *Crawler) log(result *types.ResponseResult) {
