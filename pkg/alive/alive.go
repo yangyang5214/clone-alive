@@ -82,6 +82,19 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 	}
 }
 
+func (a *Alive) handleStaticFileRoute() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		fullPath := strings.Split(c.Request.RequestURI, "?")[0]
+		findPath := utils.FindFileByName(a.option.HomeDir, utils.GetSplitLast(fullPath, "/"))
+		if findPath == "" {
+			c.JSON(http.StatusNotFound, nil)
+		} else {
+			c.File(findPath)
+		}
+		return
+	}
+}
+
 func (a *Alive) handleRoute() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fullPath := strings.Split(c.Request.RequestURI, "?")[0]
@@ -130,6 +143,16 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 	}
 }
 
+func (a *Alive) isStaticFile(urlPath string) bool {
+	lastPath := utils.GetSplitLast(urlPath, "/")
+	fileType := utils.GetSplitLast(lastPath, ".")
+	_, ok := types.FileType[strings.ToLower(fileType)]
+	if ok {
+		return true
+	}
+	return false
+}
+
 func (a *Alive) handle(engine *gin.Engine) (err error) {
 	f, err := os.Open(a.option.RouteFile)
 	defer f.Close()
@@ -152,9 +175,13 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 
 		urlPath := utils.GetUrlPath(resp.Url)
 
-		// https://stackoverflow.com/questions/32443738/setting-up-route-not-found-in-gin/
-		engine.NoRoute(a.handleRoute())
-		//engine.Handle(resp.HttpMethod, urlPath, a.handleRoute())
+		if a.isStaticFile(urlPath) {
+			engine.Handle(resp.HttpMethod, urlPath, a.handleStaticFileRoute())
+		} else {
+			// https://stackoverflow.com/questions/32443738/setting-up-route-not-found-in-gin/
+			engine.NoRoute(a.handleRoute())
+			//engine.Handle(resp.HttpMethod, urlPath, a.handleRoute())
+		}
 
 		//https://github.com/yangyang5214/clone-alive/issues/18
 		if strings.HasSuffix(urlPath, "woff2") {

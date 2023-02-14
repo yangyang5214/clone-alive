@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-//TestKillAllChrome is kill all running chromium
+// TestKillAllChrome is kill all running chromium
 func TestKillAllChrome(t *testing.T) {
 	chrome, err := New(&types.Options{
 		Url: "https://www.baidu.com/",

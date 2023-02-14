@@ -538,11 +538,11 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	} else {
 		paths = []string{c.targetDir, urlPath}
 		//https://github.com/yangyang5214/clone-alive/issues/15
-		urlPaths := strings.Split(urlPath, "/")
-		lastPath := urlPaths[len(urlPaths)-1]
+		lastPath := utils.GetSplitLast(urlPath, "/")
 		if !strings.Contains(lastPath, ".") {
 			fileNameSuffix := types.ConvertFileName(resp.ResponseContentType)
-			paths[len(paths)-1] = paths[len(paths)-1] + "." + fileNameSuffix
+			paths = append(paths, "index."+fileNameSuffix)
+			//paths[len(paths)-1] = paths[len(paths)-1] + "." + fileNameSuffix
 		}
 	}
 
