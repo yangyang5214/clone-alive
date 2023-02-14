@@ -52,3 +52,12 @@ func DoHttpReq(req *http.Request, httpClient *http.Client) []byte {
 	}
 	return bytes
 }
+
+func GetSplitLast(str string, seq string) string {
+	r := strings.Split(str, seq)
+	length := len(r)
+	if length == 0 {
+		return str
+	}
+	return r[length-1]
+}

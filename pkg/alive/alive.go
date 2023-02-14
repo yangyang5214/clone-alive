@@ -94,7 +94,13 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		}
 
 		if routeResp == nil {
-			c.JSON(http.StatusNotFound, nil)
+			//find by file name
+			findPath := utils.FindFileByName(a.option.HomeDir, utils.GetSplitLast(fullPath, "/"))
+			if findPath == "" {
+				c.JSON(http.StatusNotFound, nil)
+			} else {
+				c.File(findPath)
+			}
 			return
 		}
 		r := routeResp.Resp

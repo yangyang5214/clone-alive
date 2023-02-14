@@ -1,6 +1,12 @@
 package utils
 
-import "os"
+import (
+	"fmt"
+	"github.com/projectdiscovery/gologger"
+	"os"
+	"os/exec"
+	"strings"
+)
 
 // CurrentDirectory get the current working directory
 func CurrentDirectory() string {
@@ -25,4 +31,14 @@ func IsFileExist(p string) bool {
 		return false
 	}
 	return true
+}
+
+func FindFileByName(dir string, name string) string {
+	cmdStr := fmt.Sprintf("find %s -name %s", dir, name)
+	gologger.Info().Msgf("find cmd %s", cmdStr)
+	output, err := exec.Command("/bin/sh", "-c", cmdStr).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimRight(string(output), "\n")
 }
