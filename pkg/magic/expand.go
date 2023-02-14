@@ -31,7 +31,7 @@ var partUrlPath = []string{
 	"login/code",   //http://10.0.81.29:8001/
 }
 
-func Hit(urlPath string, contentType string) bool {
+func Hit(urlPath string) bool {
 	for _, item := range partUrlPath {
 		if strings.Contains(urlPath, item) {
 			return true
@@ -41,12 +41,12 @@ func Hit(urlPath string, contentType string) bool {
 }
 
 func RebuildUrl(urlpath string, index int, contentType string) string {
-	return path.Join(urlpath, strconv.Itoa(index)+"."+strings.Split(contentType, "/")[1])
+	return path.Join(urlpath, strconv.Itoa(index)+"."+utils.GetSplitLast(contentType, "/"))
 }
 
 func (e *ExpandVerifyCode) Run(urlStr string, contentType string) []*VerifyCodeResults {
 	urlParsed, _ := url.Parse(urlStr)
-	if !Hit(urlParsed.Path, contentType) {
+	if !Hit(urlParsed.Path) {
 		return nil
 	}
 	req := &http.Request{

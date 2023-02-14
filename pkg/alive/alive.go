@@ -57,7 +57,7 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 	p := filepath.Join(a.option.HomeDir, fileName)
 	if !utils.IsFileExist(p) {
 
-		if magic.Hit(routePath, r.ResponseContentType) {
+		if magic.Hit(routePath) {
 			for i := 0; i < magic.RetryCount; i++ {
 				fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), r.ResponseContentType)
 				p = filepath.Join(a.option.HomeDir, fileName)
@@ -175,7 +175,7 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 
 		urlPath := utils.GetUrlPath(resp.Url)
 
-		if a.isStaticFile(urlPath) {
+		if a.isStaticFile(urlPath) && !magic.Hit(urlPath) {
 			engine.Handle(resp.HttpMethod, urlPath, a.handleStaticFileRoute())
 		} else {
 			// https://stackoverflow.com/questions/32443738/setting-up-route-not-found-in-gin/
