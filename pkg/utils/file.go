@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"github.com/projectdiscovery/gologger"
 	"os"
 	"os/exec"
 	"strings"
@@ -34,11 +35,8 @@ func IsFileExist(p string) bool {
 
 func FindFileByName(dir string, name string) string {
 	cmdStr := fmt.Sprintf("find %s -name %s", dir, name)
-	return ExecCommand(cmdStr)
-}
-
-func ExecCommand(cmd string) string {
-	output, err := exec.Command("/bin/sh", "-c", cmd).Output()
+	gologger.Info().Msgf("find cmd %s", cmdStr)
+	output, err := exec.Command("/bin/sh", "-c", cmdStr).Output()
 	if err != nil {
 		return ""
 	}
