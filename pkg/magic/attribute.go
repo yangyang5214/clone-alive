@@ -31,6 +31,9 @@ func (a *Attribute) MustAttribute(el *rod.Element, name string) string {
 	if err != nil {
 		return ""
 	}
+	if attr == nil {
+		return ""
+	}
 	return *attr
 }
 
