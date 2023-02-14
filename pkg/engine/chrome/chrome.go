@@ -31,6 +31,11 @@ import (
 	"time"
 )
 
+const (
+	UserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36"
+	Language  = "zh-CN,zh;q=0.9"
+)
+
 type Crawler struct {
 	browser       *rod.Browser
 	tempDir       string
@@ -88,6 +93,7 @@ func New(options *types.Options) (*Crawler, error) {
 		Set("window-size", fmt.Sprintf("%d,%d", 1080, 1920)).
 		Set("mute-audio", "true").
 		Delete("use-mock-keychain").
+		Env(append(os.Environ(), "TZ=Asia/Shanghai")...).
 		UserDataDir(dataStore)
 
 	if options.Proxy != "" {
@@ -243,14 +249,20 @@ func (c *Crawler) navigateCallback() func(req types.Request) {
 
 // navigateRequest is process single url
 func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*types.Response, error) {
-	var page *rod.Page
-	err := rod.Try(func() {
-		page = browser.MustPage(req.Url)
-	})
+	page, err := browser.Page(proto.TargetCreateTarget{URL: strings.Join([]string{req.Url}, "/")})
 	if err != nil {
 		return nil, errors.Wrap(err, "")
 	}
 	defer page.Close()
+
+	//https://github.com/go-rod/rod/issues/230
+	err = page.SetUserAgent(&proto.NetworkSetUserAgentOverride{
+		UserAgent:      UserAgent,
+		AcceptLanguage: Language,
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "")
+	}
 
 	page = page.Timeout(time.Duration(c.option.Timeout) * time.Second)
 
