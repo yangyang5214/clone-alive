@@ -188,7 +188,9 @@ func (c *Crawler) Crawl(rootURL string) error {
 			break
 		}
 
+		c.mu.Lock()
 		item, ok := c.pendingQueue.Pop()
+		c.mu.Unlock()
 		if !ok {
 			continue
 		}
