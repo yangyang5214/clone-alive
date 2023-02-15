@@ -174,6 +174,10 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 		}
 
 		urlPath := utils.GetUrlPath(resp.Url)
+		_, ok := a.routeMap.Load(urlPath)
+		if ok {
+			continue
+		}
 
 		if a.isStaticFile(urlPath) && !magic.Hit(urlPath) {
 			engine.Handle(resp.HttpMethod, urlPath, a.handleStaticFileRoute())
