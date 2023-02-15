@@ -174,6 +174,10 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 		}
 
 		urlPath := utils.GetUrlPath(resp.Url)
+
+		// - /mas/front/css/index.css
+		// - /mas/front//css/index.css
+		urlPath = strings.Replace(urlPath, "//", "/", -1)
 		_, ok := a.routeMap.Load(urlPath)
 		if ok {
 			continue
