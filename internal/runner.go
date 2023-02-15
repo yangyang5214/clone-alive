@@ -6,7 +6,6 @@ import (
 	"github.com/yangyang5214/clone-alive/internal/banner"
 	"github.com/yangyang5214/clone-alive/pkg/engine"
 	"github.com/yangyang5214/clone-alive/pkg/engine/chrome"
-	"github.com/yangyang5214/clone-alive/pkg/engine/simple"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 )
 
@@ -22,19 +21,11 @@ func New(options *types.Options) (*Runner, error) {
 		err     error
 	)
 
-	var crawlerType types.CrawlerType
-	if options.Headless {
-		crawler, err = chrome.New(options)
-		crawlerType = types.Chrome
-	} else {
-		crawler, err = simple.New(options)
-		crawlerType = types.Simple
-	}
+	crawler, err = chrome.New(options)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create crawler engine")
 	}
 
-	gologger.Info().Msgf("Start crawler with <%s>, Site: %s", crawlerType, options.Url)
 	return &Runner{
 		option:  options,
 		crawler: crawler,

@@ -1,8 +1,10 @@
 package chrome
 
 import (
+	"bufio"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	stack "github.com/emirpasic/gods/stacks/linkedliststack"
 	"github.com/go-rod/rod"
@@ -14,6 +16,7 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/remeh/sizedwaitgroup"
 	"github.com/shirou/gopsutil/v3/process"
+	"github.com/yangyang5214/clone-alive/pkg/engine/simple"
 	"github.com/yangyang5214/clone-alive/pkg/magic"
 	"github.com/yangyang5214/clone-alive/pkg/output"
 	"github.com/yangyang5214/clone-alive/pkg/parser"
@@ -42,6 +45,7 @@ type Crawler struct {
 	targetDir     string
 	rootHost      string
 	domain        string
+	htmlUrls      []string
 	pendingQueue  stack.Stack
 	urlMap        sync.Map
 	mu            sync.Mutex
@@ -220,7 +224,44 @@ func (c *Crawler) Crawl(rootURL string) error {
 
 	wg.Wait()
 
+	if err := c.outputWriter.Close(); err != nil {
+		gologger.Error().Msg(err.Error())
+	}
+	c.crawlerStaticHtml()
+
 	return nil
+}
+
+func (c *Crawler) crawlerStaticHtml() {
+	f, err := os.Open(path.Join(c.targetDir, output.RouterFile))
+	defer f.Close()
+	if err != nil {
+		panic(err)
+	}
+	simpleCrawler, err := simple.New()
+	if err != nil {
+		panic(err)
+	}
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		var resp *types.ResponseResult
+		err = json.Unmarshal([]byte(line), &resp)
+		if err != nil {
+			gologger.Error().Msg(err.Error())
+			continue
+		}
+		if resp.HttpMethod == "GET" && resp.ResponseContentType == "text/html" {
+			urlPath := utils.GetUrlPath(resp.Url)
+			if urlPath == "/" {
+				urlPath = "index.html"
+			}
+			err = simpleCrawler.Crawl(resp.Url, filepath.Join(c.targetDir, urlPath))
+			if err != nil {
+				gologger.Error().Msg(err.Error())
+			}
+		}
+	}
 }
 
 // navigateCallback is add new url to queue
@@ -567,10 +608,6 @@ func (c *Crawler) Close() error {
 	}
 
 	if err := os.RemoveAll(c.tempDir); err != nil {
-		return err
-	}
-
-	if err := c.outputWriter.Close(); err != nil {
 		return err
 	}
 
