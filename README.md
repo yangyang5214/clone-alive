@@ -42,7 +42,7 @@ Flags:
 Use "clone-alive [command] --help" for more information about a command.
 ```
 
-- clone
+#### clone
 
 ```shell
 ➜  ~ clone-alive clone
@@ -50,6 +50,7 @@ Usage:
   clone-alive clone [flags]
 
 Flags:
+  -n, --append           append model
   -c, --concurrent int   the number of concurrent crawling goroutines (default 3)
   -g, --debug            debug ....
   -d, --depth int8       max depth for crawler (default 3)
@@ -59,7 +60,17 @@ Flags:
   -p, --proxy string     set http proxy
 ```
 
-- alive
+##### --append
+
+```
+# 克隆完成，但是少页面之类的
+clone-alive clone https://183.134.103.232/index.php
+
+# --apend  -> -n, 做个补充
+clone-alive clone https://183.134.103.232/login.php -n
+```
+
+#### alive
 
 ```shell
 ➜  ~ .clone-alive alive
@@ -72,14 +83,6 @@ Flags:
   -d, --home-dir string   static file dir
   -p, --port int          port for server (default 8001)
 ```
-
-### TODO
-
-- [ ] support depth
-- [ ] support parse html for collect more url
-- [x] support log response & request log to file
-- [x] support http proxy
-- [x] support clone result, deploy as honeypot
 
 ### Demo
 
