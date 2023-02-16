@@ -5,17 +5,22 @@ import "strings"
 type ContentType = string
 
 const (
-	TextHtml            ContentType = "text/html"
-	ImagePng            ContentType = "image/png"
-	ImageJpeg           ContentType = "image/jpeg"
-	ApplicationJson     ContentType = "application/json"
-	TextJs              ContentType = "text/javascript"
-	TextCss             ContentType = "text/css"
-	ApplicationJsonUtf8 ContentType = "application/json;charset=utf-8"
+	TextHtml                  ContentType = "text/html"
+	ImagePng                  ContentType = "image/png"
+	ImageJpeg                 ContentType = "image/jpeg"
+	ApplicationJson           ContentType = "application/json"
+	TextJs                    ContentType = "text/javascript"
+	TextCss                   ContentType = "text/css"
+	ApplicationJsonUtf8       ContentType = "application/json;charset=utf-8"
+	ApplicationFormUrlencoded ContentType = "application/x-www-form-urlencoded"
 )
 
 func ConvertContentType(contentType ContentType) string {
 	switch contentType {
+	case "", "<nil>":
+		return ""
+	case ApplicationFormUrlencoded:
+		return ""
 	case ApplicationJsonUtf8:
 		return ApplicationJson
 	case TextJs:

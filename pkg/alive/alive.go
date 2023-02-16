@@ -120,10 +120,10 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		p := routeResp.Path
 
 		contentType := r.RequestContentType
-		if contentType == "" || contentType == "<nil>" {
+		contentType = types.ConvertContentType(contentType)
+		if contentType == "" {
 			contentType = r.ResponseContentType
 		}
-		contentType = types.ConvertContentType(contentType)
 		c.Header("Content-Type", contentType)
 
 		data, err := utils.ReadFile(p)
