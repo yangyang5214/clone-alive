@@ -507,10 +507,20 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 		if len(inputs) == 0 {
 			continue
 		}
+
+		var loginBtn *rod.Element
 		gologger.Info().Msgf("Input element size %d", len(inputs))
 		for _, inputElement := range inputs {
+			if !c.attributeMock.IsEnable(inputElement) {
+				gologger.Info().Msgf("<%s> is dis enable, skip", inputElement.String())
+				continue
+			}
 			v := c.attributeMock.MockValue(inputElement)
 			if v == "" {
+				if c.attributeMock.IsLoginBtn(inputElement) {
+					loginBtn = inputElement
+					break
+				}
 				gologger.Info().Msgf("MockValue is Empty, skip, %s", inputElement.String())
 				continue
 			}
@@ -522,17 +532,23 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 			time.Sleep(1)
 		}
 
-		for _, loginXpath := range c.attributeMock.LoginXpaths {
-			el, err := formElement.ElementX(loginXpath)
-			if err != nil {
-				continue
+		if loginBtn != nil {
+			for _, loginXpath := range c.attributeMock.LoginXpaths {
+				el, err := formElement.ElementX(loginXpath)
+				if err != nil {
+					continue
+				}
+				loginBtn = el
+				break
 			}
-			gologger.Info().Msgf("Start click by <%s>", loginXpath)
-			err = el.Click(proto.InputMouseButtonLeft, 1)
+		}
+
+		if loginBtn != nil {
+			gologger.Info().Msgf("Find login btn %s", loginBtn)
+			err = loginBtn.Click(proto.InputMouseButtonLeft, 1)
 			if err != nil {
 				gologger.Error().Msg(err.Error())
 			}
-			break
 		}
 
 	}
