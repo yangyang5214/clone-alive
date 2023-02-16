@@ -39,10 +39,10 @@ var cloneCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(cloneCmd)
 
-	cloneCmd.Flags().BoolVarP(&option.Headless, "headless", "a", true, "use chrome as crawler engine")
+	cloneCmd.Flags().BoolVarP(&option.Static, "static", "s", false, "use static as crawler engine")
 	cloneCmd.Flags().BoolVarP(&option.Debug, "debug", "g", false, "debug ....")
 	cloneCmd.Flags().Int8VarP(&option.MaxDepth, "depth", "d", 3, "max depth for crawler")
-	cloneCmd.Flags().BoolVarP(&option.Append, "append", "n", false, "append model")
+	cloneCmd.Flags().BoolVarP(&option.Append, "append", "a", false, "append model")
 	cloneCmd.Flags().IntVarP(&option.MaxDuration, "duration", "u", 60*60*3, "max duration for crawler. default set 3h")
 	cloneCmd.Flags().IntVarP(&option.Concurrent, "concurrent", "c", 5, "the number of concurrent crawling goroutines")
 	cloneCmd.Flags().IntVarP(&option.Timeout, "timeout", "t", 30, "set timeout")

@@ -63,30 +63,6 @@ func New(options *types.Options) (*Crawler, error) {
 		return nil, errors.Errorf("Url missing")
 	}
 	dataStore, _ := os.MkdirTemp("", "clone-alive-*")
-	urlParsed, err := url.Parse(options.Url)
-	if err != nil {
-		return nil, err
-	}
-
-	if options.Proxy != "" {
-		_, err = url.Parse(options.Proxy)
-		if err != nil {
-			return nil, errors.Wrap(err, "proxy url error")
-		}
-	}
-
-	targetDir := path.Join(utils.CurrentDirectory(), urlParsed.Host)
-
-	if !options.Append {
-		if _, err := os.Stat(targetDir); err == nil {
-			_ = os.RemoveAll(targetDir)
-		}
-
-		err = os.MkdirAll(targetDir, os.ModePerm)
-		if err != nil {
-			return nil, err
-		}
-	}
 
 	chromeLauncher := launcher.New().
 		Leakless(false).
@@ -121,7 +97,7 @@ func New(options *types.Options) (*Crawler, error) {
 		return nil, browserErr
 	}
 
-	outputWriter, err := output.New(targetDir)
+	outputWriter, err := output.New(options.TargetDir)
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +108,7 @@ func New(options *types.Options) (*Crawler, error) {
 		browser:       browser,
 		previousPIDs:  previousPIDs,
 		tempDir:       dataStore,
-		targetDir:     targetDir,
+		targetDir:     options.TargetDir,
 		outputWriter:  outputWriter,
 		expandClient:  magic.NewExpand(),
 		rootHost:      utils.GetUrlHost(options.Url),
@@ -243,7 +219,9 @@ func (c *Crawler) crawlerStaticHtml() {
 	if err != nil {
 		panic(err)
 	}
-	simpleCrawler, err := simple.New()
+	simpleCrawler, err := simple.New(&types.Options{
+		TargetDir: c.option.TargetDir,
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -261,10 +239,7 @@ func (c *Crawler) crawlerStaticHtml() {
 			if urlPath == "/" {
 				urlPath = "index.html"
 			}
-			err = simpleCrawler.Crawl(resp.Url, filepath.Join(c.targetDir, urlPath))
-			if err != nil {
-				gologger.Error().Msg(err.Error())
-			}
+			_ = simpleCrawler.CrawlAndSave(resp.Url, urlPath)
 		}
 	}
 }
@@ -513,7 +488,6 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 			continue
 		}
 
-		var loginBtn *rod.Element
 		gologger.Info().Msgf("Input element size %d", len(inputs))
 		for _, inputElement := range inputs {
 			if !c.attributeMock.IsEnable(inputElement) {
@@ -523,7 +497,6 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 			v := c.attributeMock.MockValue(inputElement)
 			if v == "" {
 				if c.attributeMock.IsLoginBtn(inputElement) {
-					loginBtn = inputElement
 					break
 				}
 				gologger.Info().Msgf("MockValue is Empty, skip, %s", inputElement.String())
@@ -537,25 +510,18 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 			time.Sleep(1)
 		}
 
-		if loginBtn != nil {
-			for _, loginXpath := range c.attributeMock.LoginXpaths {
-				el, err := formElement.ElementX(loginXpath)
-				if err != nil {
-					continue
-				}
-				loginBtn = el
-				break
+		for _, loginXpath := range c.attributeMock.LoginXpaths {
+			loginBtn, err := formElement.ElementX(loginXpath)
+			if err != nil {
+				continue
 			}
-		}
-
-		if loginBtn != nil {
 			gologger.Info().Msgf("Find login btn %s", loginBtn)
 			err = loginBtn.Click(proto.InputMouseButtonLeft, 1)
 			if err != nil {
 				gologger.Error().Msg(err.Error())
 			}
+			break
 		}
-
 	}
 }
 

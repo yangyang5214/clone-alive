@@ -10,7 +10,10 @@ type Request struct {
 }
 
 type Response struct {
-	Body   string
-	Reader *goquery.Document
-	Depth  int
+	ContentType string
+	Body        string
+	StatusCode  int
+	BodyBytes   []byte
+	Reader      *goquery.Document
+	Depth       int
 }

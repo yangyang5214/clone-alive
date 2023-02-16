@@ -2,6 +2,7 @@ package parser
 
 import (
 	"github.com/PuerkitoBio/goquery"
+	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"strings"
 )
@@ -11,6 +12,7 @@ type ResponseParserFunc func(resp types.Response) []string
 var parsers = []ResponseParserFunc{
 	bodyATagParser,
 	bodyScriptSrcTagParser,
+	bodyLinkHrefTagParser,
 	//bodyLinkHrefTagParser,
 	//bodyEmbedTagParser,
 	//bodyFrameTagParser,
@@ -26,6 +28,7 @@ var parsers = []ResponseParserFunc{
 func ParseResponse(resp types.Response, callback func(req types.Request)) {
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(resp.Body))
 	if err != nil {
+		gologger.Error().Msgf("string to doc error %s", err.Error())
 		return
 	}
 	resp.Reader = doc
@@ -67,20 +70,17 @@ func bodyScriptSrcTagParser(resp types.Response) (urls []string) {
 	return urls
 }
 
-//
-//// bodyLinkHrefTagParser parses link tag from response
-//func bodyLinkHrefTagParser(resp types.Response, callback func(types.Request)) {
-//	resp.Reader.Find("link[href]").Each(func(i int, item *goquery.Selection) {
-//		href, ok := item.Attr("href")
-//		if ok && href != "" {
-//			callback(types.Request{
-//				Url:   href,
-//				Depth: resp.Depth,
-//			})
-//		}
-//	})
-//}
-//
+// bodyScriptSrcTagParser parses script src tag from response
+func bodyLinkHrefTagParser(resp types.Response) (urls []string) {
+	resp.Reader.Find("link[href]").Each(func(i int, item *goquery.Selection) {
+		src, ok := item.Attr("href")
+		if ok && src != "" {
+			urls = append(urls, src)
+		}
+	})
+	return urls
+}
+
 //// bodyEmbedTagParser parses Embed tag from response
 //func bodyEmbedTagParser(resp types.Response, callback func(types.Request)) {
 //	resp.Reader.Find("embed[src]").Each(func(i int, item *goquery.Selection) {

@@ -23,3 +23,7 @@ func TestUrlParse(t *testing.T) {
 func TestSplit(t *testing.T) {
 	t.Log(strings.Split("127.0.0.1:9090", ":")[0])
 }
+
+func TestGetRealUrl(t *testing.T) {
+	t.Log(GetRealUrl("https://183.134.103.232/resources/jquery/jquery.min.js%3Fjs_ver=2023-02-16"))
+}
