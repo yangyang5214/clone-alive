@@ -474,7 +474,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	c.processLoginForm(page)
 
 	//一些请求是 解析 js 加载的，这里设置长一点
-	c.waitLoaded(lastTimestamp, 10)
+	c.waitLoaded(lastTimestamp, 30)
 
 	return &types.Response{
 		Body:  resp.Body,
