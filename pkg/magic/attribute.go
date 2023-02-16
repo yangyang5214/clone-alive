@@ -114,6 +114,8 @@ func NewAttribute() *Attribute {
 			"//*[@class='loginbtn']",
 			"//*[contains(@class,'loginbtn')]",
 			"//*[contains(@value,'登 录')]",
+			"//*[@id=\"signIn\"]", //https://202.3.166.101/SAAS/auth/login
+			"//*[@value=\"Sign In\"]",
 		},
 	}
 }
