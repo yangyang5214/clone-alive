@@ -77,13 +77,15 @@ func New(options *types.Options) (*Crawler, error) {
 
 	targetDir := path.Join(utils.CurrentDirectory(), urlParsed.Host)
 
-	if _, err := os.Stat(targetDir); err == nil {
-		_ = os.RemoveAll(targetDir)
-	}
+	if !options.Append {
+		if _, err := os.Stat(targetDir); err == nil {
+			_ = os.RemoveAll(targetDir)
+		}
 
-	err = os.MkdirAll(targetDir, os.ModePerm)
-	if err != nil {
-		return nil, err
+		err = os.MkdirAll(targetDir, os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	chromeLauncher := launcher.New().
@@ -227,7 +229,10 @@ func (c *Crawler) Crawl(rootURL string) error {
 	if err := c.outputWriter.Close(); err != nil {
 		gologger.Error().Msg(err.Error())
 	}
-	c.crawlerStaticHtml()
+
+	if !c.option.Append {
+		c.crawlerStaticHtml()
+	}
 
 	return nil
 }
@@ -558,7 +563,7 @@ func (c *Crawler) log(result *types.ResponseResult) {
 	c.urlMap.Store(result.Url, true)
 	_ = c.outputWriter.Write(*result)
 	c.saveFile(utils.GetUrlPath(result.Url), result)
-	if utils.IsSameURL(result.Url, c.option.Url) {
+	if utils.IsSameURL(result.Url, c.option.Url) && !c.option.Append {
 		parsed, _ := url.Parse(result.Url)
 		result.Url = fmt.Sprintf(`%s://%s`, parsed.Scheme, parsed.Host)
 		_ = c.outputWriter.Write(*result)
