@@ -31,6 +31,7 @@ var partUrlPath = []string{
 	"servlets/vms",   //http://58.250.50.115:5050/
 	"login/code",     //http://10.0.81.29:8001/
 	"module=captcha", //https://120.27.184.164/
+	"createcode",     //https://222.187.115.230:10443/
 }
 
 func Hit(urlPath string) bool {

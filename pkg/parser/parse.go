@@ -76,7 +76,10 @@ func bodyImgSrcTagParser(resp types.Response) (urls []string) {
 	resp.Reader.Find("img[src]").Each(func(i int, item *goquery.Selection) {
 		src, ok := item.Attr("src")
 		if ok && src != "" {
-			urls = append(urls, src)
+			// remove image base64
+			if !strings.HasSuffix(src, "data:") {
+				urls = append(urls, src)
+			}
 		}
 	})
 	return urls
