@@ -9,6 +9,12 @@ import (
 type AttributeType = string
 
 const (
+	DefaultEmail = "beer@beer.com"
+	DefaultUser  = "clone-alive"
+	DefaultText  = "Clone-Alive_magic123~"
+)
+
+const (
 	email       AttributeType = "email"
 	password    AttributeType = "password"
 	text        AttributeType = "text"
@@ -87,11 +93,11 @@ func (a *Attribute) MockValue(element *rod.Element) string {
 		case checkbox, submit, hidden:
 			return ""
 		case email:
-			return "beer@beer.com"
+			return DefaultEmail
 		case user, login:
-			return "clone-alive"
+			return DefaultUser
 		case password, text, queryString:
-			return "Clone-Alive_magic123~"
+			return DefaultText
 		default:
 			gologger.Warning().Msgf("Find New Attribute type %s", typeStr)
 		}

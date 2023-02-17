@@ -196,6 +196,9 @@ func (c *Crawler) Crawl(rootURL string) error {
 				_ = c.outputWriter.Write(errResult)
 				return
 			}
+			if resp == nil {
+				return
+			}
 			parser.ParseResponse(*resp, callback)
 		}()
 	}
@@ -574,10 +577,17 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 		}
 	}
 
-	//replace original url
-	resp.Body = strings.Replace(resp.Body, c.domain, "", -1)
-	resp.Body = strings.Replace(resp.Body, c.rootHost, "", -1)
-	resp.Body = strings.Replace(resp.Body, strings.Split(c.rootHost, ":")[0], "", -1)
+	if resp.ResponseContentType == types.TextHtml {
+		//replace original url
+		data = strings.Replace(resp.Body, c.domain, "", -1)
+		data = strings.Replace(resp.Body, c.rootHost, "", -1)
+		data = strings.Replace(resp.Body, strings.Split(c.rootHost, ":")[0], "", -1)
+
+		//replace input
+		data = strings.Replace(resp.Body, magic.DefaultEmail, "", -1)
+		data = strings.Replace(resp.Body, magic.DefaultUser, "", -1)
+		data = strings.Replace(resp.Body, magic.DefaultText, "", -1)
+	}
 
 	if strings.HasPrefix(resp.ResponseContentType, "image") {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))

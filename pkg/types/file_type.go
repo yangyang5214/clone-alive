@@ -15,6 +15,11 @@ var FileType = map[string]string{
 func IsStaticFile(url string) bool {
 	url = utils.GetRealUrl(url)
 	lastPath := utils.GetSplitLast(url, "/")
+
+	// SAAS/jersey/manager/api/images/5101/
+	if !strings.Contains(lastPath, ".") {
+		return false
+	}
 	fileType := utils.GetSplitLast(lastPath, ".")
 	_, ok := FileType[strings.ToLower(fileType)]
 	if ok {

@@ -38,25 +38,49 @@ func New(option types.AliveOption) *Alive {
 	}
 }
 
+func (a *Alive) findResp(urlpath string) any {
+	var urlpaths []string
+	urlpaths = append(urlpaths, urlpath)
+	if strings.HasSuffix(urlpath, "/") {
+		urlpaths = append(urlpaths, urlpath[:len(urlpath)-1])
+	} else {
+		urlpaths = append(urlpaths, urlpath+"/")
+	}
+
+	for _, item := range urlpaths {
+		v, ok := a.routeMap.Load(item)
+		if ok {
+			return v
+		}
+	}
+	return nil
+}
+
 // loadResp is parse ResponseResult by route path/url
-// https://github.com/yangyang5214/clone-alive/issues/19
 func (a *Alive) loadResp(routePath string) *RouteResp {
 	fileName := routePath
 	if routePath == "/" {
 		fileName = "index.html"
 	} else if strings.HasSuffix(routePath, "/") {
-		fileName = path.Join(routePath, "index.html")
+		fileName = path.Join(routePath, "index.html") // https://github.com/yangyang5214/clone-alive/issues/19
 	}
 
-	v, ok := a.routeMap.Load(routePath)
-	if !ok {
+	v := a.findResp(routePath)
+	if v == nil {
+		gologger.Info().Msgf("routePath <%s> not exist, skip", routePath)
 		return nil
 	}
 	r := v.(*types.ResponseResult)
-
 	p := filepath.Join(a.option.HomeDir, fileName)
-	if !utils.IsFileExist(p) {
 
+	fileSuffix := types.ConvertFileName(r.ResponseContentType)
+	if !utils.IsFileExist(p) {
+		//http://localhost:8001/SAAS/jersey/manager/api/images/5101/
+		// SAAS/jersey/manager/api/images/5101/index.png
+		p = filepath.Join(a.option.HomeDir, routePath, "index."+fileSuffix)
+	}
+
+	if !utils.IsFileExist(p) {
 		if magic.Hit(routePath) {
 			for i := 0; i < magic.RetryCount; i++ {
 				fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), r.ResponseContentType)
@@ -69,7 +93,7 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 	}
 
 	if !utils.IsFileExist(p) {
-		p = p + "." + types.ConvertFileName(r.ResponseContentType)
+		p = p + "." + types.ConvertFileName(r.ResponseContentType) // ?
 	}
 
 	if !utils.IsFileExist(p) {

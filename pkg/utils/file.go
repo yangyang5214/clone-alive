@@ -35,7 +35,7 @@ func IsFileExist(p string) bool {
 
 func FindFileByName(dir string, name string) string {
 	cmdStr := fmt.Sprintf("find %s -name %s", dir, name)
-	gologger.Info().Msgf("find cmd %s", cmdStr)
+	gologger.Info().Msgf("find cmd <%s>", cmdStr)
 	output, err := exec.Command("/bin/sh", "-c", cmdStr).Output()
 	if err != nil {
 		return ""
