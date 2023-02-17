@@ -45,6 +45,7 @@ type Crawler struct {
 	targetDir     string
 	rootHost      string
 	domain        string
+	domains       []string
 	htmlUrls      []string
 	pendingQueue  stack.Stack
 	urlMap        sync.Map
@@ -113,6 +114,7 @@ func New(options *types.Options) (*Crawler, error) {
 		expandClient:  magic.NewExpand(),
 		rootHost:      utils.GetUrlHost(options.Url),
 		domain:        utils.GetDomain(options.Url),
+		domains:       utils.GetDomains(options.Url),
 		pendingQueue:  *stack.New(),
 		urlMap:        sync.Map{},
 		mu:            sync.Mutex{},
@@ -590,7 +592,9 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 
 	if resp.ResponseContentType == types.TextHtml {
 		//replace original url
-		data = strings.Replace(resp.Body, c.domain, "", -1)
+		for _, item := range c.domains {
+			data = strings.Replace(resp.Body, item, "", -1)
+		}
 		data = strings.Replace(resp.Body, c.rootHost, "", -1)
 		data = strings.Replace(resp.Body, strings.Split(c.rootHost, ":")[0], "", -1)
 

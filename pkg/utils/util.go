@@ -32,6 +32,18 @@ func GetDomain(u string) string {
 	return fmt.Sprintf("%s://%s", urlParsed.Scheme, urlParsed.Host)
 }
 
+func GetDomains(u string) []string {
+	urlParsed, _ := url.Parse(u)
+	return []string{
+		fmt.Sprintf("%s://%s", "http", urlParsed.Host+":80"),
+		fmt.Sprintf("%s://%s", "https", urlParsed.Host+":443"),
+		fmt.Sprintf("%s://%s", "https", urlParsed.Host),
+		fmt.Sprintf("%s://%s", "https", GetSplitLast(urlParsed.Host, ":")),
+		fmt.Sprintf("%s://%s", "http", urlParsed.Host),
+		fmt.Sprintf("%s://%s", "http", GetSplitLast(urlParsed.Host, ":")),
+	}
+}
+
 // GetRealUrl is remove query
 func GetRealUrl(u string) string {
 	r := strings.Split(u, "?")
@@ -73,4 +85,8 @@ func GetSplitLast(str string, seq string) string {
 		return str
 	}
 	return r[length-1]
+}
+
+func GetSplitFirst(str string, seq string) string {
+	return strings.Split(str, seq)[0]
 }

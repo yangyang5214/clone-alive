@@ -27,3 +27,8 @@ func TestIsSameURL(t *testing.T) {
 	r := IsSameURL("https://120.27.184.164/?module=captcha&0.09005321683750123", "https://120.27.184.164/?module=captcha")
 	t.Log(r)
 }
+
+func TestGetDomains(t *testing.T) {
+	r := GetDomains("https://202.3.166.101/")
+	t.Log(r)
+}
