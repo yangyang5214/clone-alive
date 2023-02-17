@@ -14,7 +14,7 @@ func IsURL(url string) bool {
 }
 
 func GetUrlPath(u string) string {
-	urlParsed, _ := url.Parse(u)
+	urlParsed, _ := url.Parse(GetRealUrl(u))
 	p := urlParsed.Path
 	if p == "" {
 		p = "/"

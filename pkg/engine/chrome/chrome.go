@@ -122,7 +122,9 @@ func New(options *types.Options) (*Crawler, error) {
 
 func (c *Crawler) isCrawled(urlStr string) bool {
 	urls := []string{
-		urlStr, urlStr + "/", strings.TrimRight(urlStr, "/"),
+		urlStr, urlStr + "/",
+		strings.TrimRight(urlStr, "/"),
+		utils.GetRealUrl(urlStr),
 	}
 	for _, item := range urls {
 		_, exist := c.urlMap.Load(item)
@@ -141,6 +143,7 @@ func (c *Crawler) AddNewUrl(request types.Request) bool {
 	}
 	c.pendingQueue.Push(request)
 	c.urlMap.Store(request.Url, true)
+	c.urlMap.Store(utils.GetRealUrl(request.Url), true)
 	return true
 }
 
