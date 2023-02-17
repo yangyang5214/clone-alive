@@ -434,10 +434,8 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	}
 
 	var responseContentType string
-	fmt.Println(resp)
-	if resp == nil {
-		fmt.Println(resp)
-		responseContentType = types.TextHtml
+	if resp != nil {
+		responseContentType = resp.ResponseContentType
 	}
 	resp = &types.ResponseResult{
 		Timestamp:           time.Now(),
