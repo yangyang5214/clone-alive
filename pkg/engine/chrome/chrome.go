@@ -469,7 +469,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 }
 
 func (c *Crawler) waitLoaded(timestamp int64, interval int64) {
-	gologger.Info().Msgf("Start wait loading... %d", interval)
+	gologger.Info().Msgf("Start wait loading... %d s", interval)
 	for {
 		if time.Now().Unix()-timestamp > interval {
 			break
