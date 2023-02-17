@@ -71,6 +71,9 @@ func (c *Crawler) CrawlAndSave(url string, targetPath string) (resp *types.Respo
 		return resp
 	}
 	gologger.Info().Msgf("For url <%s> => <%s>", url, targetPath)
+	if resp.BodyBytes == nil || len(resp.BodyBytes) == 0 {
+		return nil
+	}
 	err = rod_util.OutputFile(targetPath, resp.BodyBytes)
 	if err != nil {
 		return nil

@@ -3,6 +3,7 @@ package magic
 import (
 	"crypto/tls"
 	"github.com/projectdiscovery/gologger"
+	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"net/http"
 	"net/url"
@@ -27,13 +28,15 @@ type VerifyCodeResults struct {
 var partUrlPath = []string{
 	"verifycode", //http://58.56.78.6:81/pages/login.jsp
 	"getCode",
-	"servlets/vms", //http://58.250.50.115:5050/
-	"login/code",   //http://10.0.81.29:8001/
+	"servlets/vms",   //http://58.250.50.115:5050/
+	"login/code",     //http://10.0.81.29:8001/
+	"module=captcha", //https://120.27.184.164/
 }
 
 func Hit(urlPath string) bool {
 	for _, item := range partUrlPath {
 		if strings.Contains(urlPath, item) {
+			gologger.Info().Msgf("Url <%s> Hit <%s>", urlPath, item)
 			return true
 		}
 	}
@@ -41,12 +44,15 @@ func Hit(urlPath string) bool {
 }
 
 func RebuildUrl(urlpath string, index int, contentType string) string {
-	return path.Join(urlpath, strconv.Itoa(index)+"."+utils.GetSplitLast(contentType, "/"))
+	if contentType == "" {
+		contentType = types.ImagePng
+	}
+	return path.Join(utils.GetRealUrl(urlpath), strconv.Itoa(index)+"."+utils.GetSplitLast(contentType, "/"))
 }
 
 func (e *ExpandVerifyCode) Run(urlStr string, contentType string) []*VerifyCodeResults {
 	urlParsed, _ := url.Parse(urlStr)
-	if !Hit(urlParsed.Path) {
+	if !Hit(urlParsed.String()) {
 		return nil
 	}
 	req := &http.Request{

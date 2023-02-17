@@ -212,6 +212,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 		gologger.Error().Msg(err.Error())
 	}
 
+	// 这里是 append 模式再去静态爬取
 	if !c.option.Append {
 		c.crawlerStaticHtml()
 	}
@@ -429,17 +430,24 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get html")
 	}
+
+	var responseContentType string
+	fmt.Println(resp)
+	if resp == nil {
+		fmt.Println(resp)
+		responseContentType = types.TextHtml
+	}
 	resp = &types.ResponseResult{
 		Timestamp:           time.Now(),
 		Url:                 req.Url, //currentUrl already collect in network event
 		Body:                html,
 		Status:              http.StatusOK,
-		ResponseContentType: types.TextHtml,
+		ResponseContentType: responseContentType,
 		HttpMethod:          http.MethodGet,
 		Depth:               req.Depth + 1,
 	}
 
-	if resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
+	if !c.option.Append && resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
 		_ = rod.Try(func() {
 			page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
 		})

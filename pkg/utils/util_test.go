@@ -22,3 +22,8 @@ func TestSplit(t *testing.T) {
 func TestGetRealUrl(t *testing.T) {
 	t.Log(GetRealUrl("https://183.134.103.232/resources/jquery/jquery.min.js%3Fjs_ver=2023-02-16"))
 }
+
+func TestIsSameURL(t *testing.T) {
+	r := IsSameURL("https://120.27.184.164/?module=captcha&0.09005321683750123", "https://120.27.184.164/?module=captcha")
+	t.Log(r)
+}

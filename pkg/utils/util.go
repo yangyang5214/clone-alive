@@ -32,6 +32,7 @@ func GetDomain(u string) string {
 	return fmt.Sprintf("%s://%s", urlParsed.Scheme, urlParsed.Host)
 }
 
+// GetRealUrl is remove query
 func GetRealUrl(u string) string {
 	r := strings.Split(u, "?")
 	if len(r) == 1 {
@@ -40,7 +41,11 @@ func GetRealUrl(u string) string {
 	return r[0]
 }
 
+// IsSameURL todo with param
 func IsSameURL(u1 string, u2 string) bool {
+	if u1 == u2 {
+		return true
+	}
 	return GetUrlPath(u1) == GetUrlPath(u2)
 }
 

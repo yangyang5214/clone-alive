@@ -13,6 +13,7 @@ var parsers = []ResponseParserFunc{
 	bodyATagParser,
 	bodyScriptSrcTagParser,
 	bodyLinkHrefTagParser,
+	bodyImgSrcTagParser,
 	//bodyLinkHrefTagParser,
 	//bodyEmbedTagParser,
 	//bodyFrameTagParser,
@@ -62,6 +63,17 @@ func bodyATagParser(resp types.Response) (urls []string) {
 // bodyScriptSrcTagParser parses script src tag from response
 func bodyScriptSrcTagParser(resp types.Response) (urls []string) {
 	resp.Reader.Find("script[src]").Each(func(i int, item *goquery.Selection) {
+		src, ok := item.Attr("src")
+		if ok && src != "" {
+			urls = append(urls, src)
+		}
+	})
+	return urls
+}
+
+// bodyImgSrcTagParser… parses script src tag from response
+func bodyImgSrcTagParser(resp types.Response) (urls []string) {
+	resp.Reader.Find("img[src]").Each(func(i int, item *goquery.Selection) {
 		src, ok := item.Attr("src")
 		if ok && src != "" {
 			urls = append(urls, src)

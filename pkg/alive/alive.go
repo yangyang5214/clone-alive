@@ -56,6 +56,22 @@ func (a *Alive) findResp(urlpath string) any {
 	return nil
 }
 
+func (a *Alive) tryMagic(routePath string, contentType string) string {
+	if magic.Hit(routePath) {
+		var fileName string
+		var p string
+		for i := 0; i < magic.RetryCount; i++ {
+			fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), contentType)
+			gologger.Info().Msg(fileName)
+			p = filepath.Join(a.option.HomeDir, fileName)
+			if utils.IsFileExist(p) {
+				return p
+			}
+		}
+	}
+	return ""
+}
+
 // loadResp is parse ResponseResult by route path/url
 func (a *Alive) loadResp(routePath string) *RouteResp {
 	fileName := routePath
@@ -81,15 +97,7 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 	}
 
 	if !utils.IsFileExist(p) {
-		if magic.Hit(routePath) {
-			for i := 0; i < magic.RetryCount; i++ {
-				fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), r.ResponseContentType)
-				p = filepath.Join(a.option.HomeDir, fileName)
-				if utils.IsFileExist(p) {
-					break
-				}
-			}
-		}
+		p = a.tryMagic(routePath, r.ResponseContentType)
 	}
 
 	if !utils.IsFileExist(p) {
@@ -127,12 +135,22 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		//Request.RequestURI => /login.action?language=da_DK
 		routeResp := a.loadResp(c.Request.RequestURI)
 		if routeResp == nil {
+			// http://localhost:8001/?module=captcha&0.06911867290494 验证码
+			findPath := a.tryMagic(c.Request.RequestURI, "")
+			if findPath != "" {
+				c.File(findPath)
+				return
+			}
 			routeResp = a.loadResp(fullPath)
 		}
 
 		if routeResp == nil {
 			//find by file name
 			findPath := utils.FindFileByName(a.option.HomeDir, utils.GetSplitLast(fullPath, "/"))
+			if findPath == "" {
+				findPath = a.tryMagic(c.Request.RequestURI, "")
+			}
+
 			if findPath == "" {
 				c.JSON(http.StatusNotFound, nil)
 			} else {
