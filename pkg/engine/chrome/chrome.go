@@ -605,7 +605,11 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	if strings.HasPrefix(resp.ResponseContentType, "image") {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
 	}
-	err := rod_util.OutputFile(filepath.Join(paths...), data)
+	p := filepath.Join(paths...)
+	if utils.IsFileExist(p) {
+		return
+	}
+	err := rod_util.OutputFile(p, data)
 	if err != nil {
 		gologger.Error().Msgf("OutputFile error: %s", err.Error())
 	}
