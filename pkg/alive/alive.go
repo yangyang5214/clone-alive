@@ -62,7 +62,6 @@ func (a *Alive) tryMagic(routePath string, contentType string) string {
 		var p string
 		for i := 0; i < magic.RetryCount; i++ {
 			fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), contentType)
-			gologger.Info().Msg(fileName)
 			p = filepath.Join(a.option.HomeDir, fileName)
 			if utils.IsFileExist(p) {
 				return p
