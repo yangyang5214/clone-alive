@@ -5,7 +5,7 @@ import (
 )
 
 var (
-	Version     = "v0.1.5"
+	Version     = "v0.1.6"
 	ProjectName = "clone-alive"
 	//https://springhow.com/spring-boot-banner-generator/
 	banner = "       _                          _ _\n   ___| | ___  _ __   ___    __ _| (_)_   _____\n  / __| |/ _ \\| '_ \\ / _ \\  / _` | | \\ \\ / / _ \\\n | (__| | (_) | | | |  __/ | (_| | | |\\ V /  __/\n  \\___|_|\\___/|_| |_|\\___|  \\__,_|_|_| \\_/ \\___|"
