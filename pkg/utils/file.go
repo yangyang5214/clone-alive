@@ -38,7 +38,9 @@ func FindFileByName(dir string, name string) string {
 	gologger.Info().Msgf("find cmd <%s>", cmdStr)
 	output, err := exec.Command("/bin/sh", "-c", cmdStr).Output()
 	if err != nil {
+		gologger.Error().Msgf("find error %s", err)
 		return ""
 	}
-	return strings.TrimRight(string(output), "\n")
+	result := strings.Split(string(output), "\n")
+	return result[0]
 }

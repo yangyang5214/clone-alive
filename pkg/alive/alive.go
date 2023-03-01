@@ -117,7 +117,14 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 func (a *Alive) handleStaticFileRoute() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fullPath := strings.Split(c.Request.RequestURI, "?")[0]
-		findPath := utils.FindFileByName(a.option.HomeDir, utils.GetSplitLast(fullPath, "/"))
+		fileName := utils.GetSplitLast(fullPath, "/")
+
+		//例子: http://localhost:8001/spa/hrm/static/index.css
+		// find xxx/spa/hrm/static -name index.css
+		findPath := utils.FindFileByName(path.Join(a.option.HomeDir, strings.Replace(fullPath, fileName, "", -1)), fileName)
+		if findPath == "" {
+			findPath = utils.FindFileByName(path.Join(a.option.HomeDir), fileName)
+		}
 		if findPath == "" {
 			c.JSON(http.StatusNotFound, nil)
 		} else {
