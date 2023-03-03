@@ -8,7 +8,6 @@ import (
 	"github.com/yangyang5214/clone-alive/pkg/engine/chrome"
 	"github.com/yangyang5214/clone-alive/pkg/engine/simple"
 	"github.com/yangyang5214/clone-alive/pkg/types"
-	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"net/url"
 	"os"
 	"path"
@@ -38,7 +37,12 @@ func New(options *types.Options) (*Runner, error) {
 		}
 	}
 
-	targetDir := path.Join(utils.CurrentDirectory(), urlParsed.Host)
+	pwd, err := os.Getwd()
+	if err != nil {
+		return nil, errors.Wrap(err, "get pwd error")
+	}
+
+	targetDir := path.Join(pwd, urlParsed.Host)
 
 	if !options.Append {
 		if _, err := os.Stat(targetDir); err == nil {

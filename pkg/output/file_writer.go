@@ -3,7 +3,7 @@ package output
 import (
 	"bufio"
 	"github.com/projectdiscovery/gologger"
-	"github.com/yangyang5214/clone-alive/pkg/utils"
+	fileutil "github.com/yangyang5214/gou/file"
 	"os"
 )
 
@@ -18,7 +18,7 @@ type FileWriter struct {
 // NewFileOutputWriter creates a new buffered writer for a file
 func newFileOutputWriter(file string) (fw *FileWriter, err error) {
 	var output *os.File
-	if utils.IsFileExist(file) {
+	if fileutil.FileExists(file) {
 		//output, err = os.Open(file)
 		//https://stackoverflow.com/a/33852107/15188179
 		output, err = os.OpenFile(file, os.O_APPEND|os.O_WRONLY, os.ModeAppend)

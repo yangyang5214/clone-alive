@@ -1,22 +1,20 @@
 package magic
 
 import (
-	"crypto/tls"
 	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
-	"net/http"
+	"github.com/yangyang5214/gou/http"
 	"net/url"
 	"path"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const RetryCount = 30
 
 type ExpandVerifyCode struct {
-	httpClient *http.Client
+	httpClient *httputil.HttpClient
 	retryCount int
 }
 
@@ -56,15 +54,18 @@ func (e *ExpandVerifyCode) Run(urlStr string, contentType string) []*VerifyCodeR
 	if !Hit(urlParsed.String()) {
 		return nil
 	}
-	req := &http.Request{
-		Method: "GET",
-		URL:    urlParsed,
-	}
 
 	var result []*VerifyCodeResults
 
 	for i := 0; i < e.retryCount; i++ {
-		respBody := utils.DoHttpReq(req, e.httpClient)
+		resp, err := e.httpClient.Get(urlStr)
+		if err != nil {
+			break
+		}
+		respBody, err := e.httpClient.ReadBody(resp)
+		if err != nil {
+			break
+		}
 		if respBody == nil {
 			gologger.Error().Msgf("Fetch http req failed: %s", urlStr)
 			continue
@@ -78,13 +79,8 @@ func (e *ExpandVerifyCode) Run(urlStr string, contentType string) []*VerifyCodeR
 }
 
 func NewExpand() *ExpandVerifyCode {
-	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-	}
 	return &ExpandVerifyCode{
-		httpClient: &http.Client{
-			Transport: tr,
-			Timeout:   60 * time.Second},
+		httpClient: httputil.NewClient(httputil.DefaultOptions),
 		retryCount: RetryCount,
 	}
 }

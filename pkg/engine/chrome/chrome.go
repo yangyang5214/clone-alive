@@ -22,6 +22,8 @@ import (
 	"github.com/yangyang5214/clone-alive/pkg/parser"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
+	fileutil "github.com/yangyang5214/gou/file"
+	urlutil "github.com/yangyang5214/gou/url"
 	"go.uber.org/multierr"
 	"net/http"
 	"net/url"
@@ -112,7 +114,7 @@ func New(options *types.Options) (*Crawler, error) {
 		targetDir:     options.TargetDir,
 		outputWriter:  outputWriter,
 		expandClient:  magic.NewExpand(),
-		rootHost:      utils.GetUrlHost(options.Url),
+		rootHost:      urlutil.GetUrlHost(options.Url),
 		domain:        utils.GetDomain(options.Url),
 		domains:       utils.GetDomains(options.Url),
 		pendingQueue:  *stack.New(),
@@ -449,7 +451,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 
 	if !c.option.Append && resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
 		_ = rod.Try(func() {
-			page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", utils.GetUrlHost(req.Url)+".png"))
+			page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", urlutil.GetUrlHost(req.Url)+".png"))
 		})
 	}
 
@@ -606,7 +608,7 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
 	}
 	p := filepath.Join(paths...)
-	if utils.IsFileExist(p) {
+	if fileutil.FileExists(p) {
 		return
 	}
 	err := rod_util.OutputFile(p, data)

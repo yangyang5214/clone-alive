@@ -10,6 +10,7 @@ import (
 	"github.com/yangyang5214/clone-alive/pkg/magic"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
+	fileutil "github.com/yangyang5214/gou/file"
 	"math/rand"
 	"net/http"
 	"os"
@@ -63,7 +64,7 @@ func (a *Alive) tryMagic(routePath string, contentType string) string {
 		for i := 0; i < magic.RetryCount; i++ {
 			fileName = magic.RebuildUrl(routePath, rand.Intn(magic.RetryCount), contentType)
 			p = filepath.Join(a.option.HomeDir, fileName)
-			if utils.IsFileExist(p) {
+			if fileutil.FileExists(p) {
 				return p
 			}
 		}
@@ -89,21 +90,21 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 	p := filepath.Join(a.option.HomeDir, fileName)
 
 	fileSuffix := types.ConvertFileName(r.ResponseContentType)
-	if !utils.IsFileExist(p) {
+	if !fileutil.FileExists(p) {
 		//http://localhost:8001/SAAS/jersey/manager/api/images/5101/
 		// SAAS/jersey/manager/api/images/5101/index.png
 		p = filepath.Join(a.option.HomeDir, routePath, "index."+fileSuffix)
 	}
 
-	if !utils.IsFileExist(p) {
+	if !fileutil.FileExists(p) {
 		p = a.tryMagic(routePath, r.ResponseContentType)
 	}
 
-	if !utils.IsFileExist(p) {
+	if !fileutil.FileExists(p) {
 		p = p + "." + types.ConvertFileName(r.ResponseContentType) // ?
 	}
 
-	if !utils.IsFileExist(p) {
+	if !fileutil.FileExists(p) {
 		return nil
 	}
 
@@ -174,8 +175,8 @@ func (a *Alive) handleRoute() gin.HandlerFunc {
 		}
 		c.Header("Content-Type", contentType)
 
-		data, err := utils.ReadFile(p)
-		if err != nil {
+		data := fileutil.FileRead(p)
+		if len(data) == 0 {
 			c.JSON(http.StatusOK, nil)
 			return
 		}
