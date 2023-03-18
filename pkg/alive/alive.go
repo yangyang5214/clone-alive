@@ -205,7 +205,7 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 		var resp *types.ResponseResult
 		err = json.Unmarshal([]byte(line), &resp)
 		if err != nil {
-			gologger.Error().Msg(err.Error())
+			gologger.Error().Msgf("json Unmarshal error: %s. \n%s\n ", err.Error(), line)
 			continue
 		}
 		if resp.Error != "" {
@@ -275,6 +275,6 @@ func (a *Alive) Run() (err error) {
 		return err
 	}
 	server := fmt.Sprintf(":%d", a.option.Port)
-	gologger.Info().Msgf("Alive server start with 127.0.0.1%s", server)
+	gologger.Info().Msgf("Alive server start with http://127.0.0.1%s", server)
 	return r.Run(server)
 }

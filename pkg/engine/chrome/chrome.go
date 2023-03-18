@@ -113,7 +113,7 @@ func New(options *types.Options) (*Crawler, error) {
 		tempDir:       dataStore,
 		targetDir:     options.TargetDir,
 		outputWriter:  outputWriter,
-		expandClient:  magic.NewExpand(),
+		expandClient:  magic.NewExpand(magic.RetryCount),
 		rootHost:      urlutil.GetUrlHost(options.Url),
 		domain:        utils.GetDomain(options.Url),
 		domains:       utils.GetDomains(options.Url),
@@ -213,7 +213,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 	wg.Wait()
 
 	if err := c.outputWriter.Close(); err != nil {
-		gologger.Error().Msg(err.Error())
+		gologger.Error().Msgf("Save file error %s", err.Error())
 	}
 
 	// 这里是 append 模式再去静态爬取
@@ -228,7 +228,7 @@ func (c *Crawler) crawlerStaticHtml() {
 	f, err := os.Open(path.Join(c.targetDir, output.RouterFile))
 	defer f.Close()
 	if err != nil {
-		panic(err)
+		panic(err) //暴露问题 处理异常
 	}
 	simpleCrawler, err := simple.New(&types.Options{
 		TargetDir: c.option.TargetDir,
@@ -242,7 +242,7 @@ func (c *Crawler) crawlerStaticHtml() {
 		var resp *types.ResponseResult
 		err = json.Unmarshal([]byte(line), &resp)
 		if err != nil {
-			gologger.Error().Msg(err.Error())
+			gologger.Error().Msgf("json Unmarshal error: %s. \n%s\n", line, err.Error())
 			continue
 		}
 		if resp.HttpMethod == "GET" && resp.ResponseContentType == "text/html" {
@@ -534,7 +534,7 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 			gologger.Info().Msgf("Find login btn %s", loginBtn)
 			err = loginBtn.Click(proto.InputMouseButtonLeft, 1)
 			if err != nil {
-				gologger.Error().Msg(err.Error())
+				gologger.Error().Msgf("Btn click error %s", err.Error())
 			}
 			break
 		}

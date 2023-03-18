@@ -14,6 +14,7 @@ require (
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
 	go.uber.org/multierr v1.9.0
+	github.com/yangyang5214/gou v0.0.2 // indirect
 )
 
 require (
@@ -61,5 +62,4 @@ require (
 	gopkg.in/djherbis/times.v1 v1.3.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	github.com/yangyang5214/gou v0.0.1 // indirect
 )

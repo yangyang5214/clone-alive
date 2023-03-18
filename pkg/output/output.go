@@ -20,7 +20,7 @@ type StandardWriter struct {
 	outputFile *FileWriter
 }
 
-//New creates a new StandardWriter obj
+// New creates a new StandardWriter obj
 func New(targetDir string) (Writer, error) {
 	writer := &StandardWriter{}
 	output, err := newFileOutputWriter(filepath.Join(targetDir, RouterFile))
@@ -41,8 +41,8 @@ func (s *StandardWriter) Write(respResult types.ResponseResult) error {
 	gologger.Info().Msg(string(data))
 	err = s.outputFile.Write(data)
 	if err != nil {
-		gologger.Error().Msg(err.Error())
-		return errors.Wrap(err, "write file error")
+		gologger.Error().Msgf("write file error, %s", err.Error())
+		return err
 	}
 	return nil
 }
