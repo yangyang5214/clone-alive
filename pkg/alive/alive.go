@@ -4,13 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/pkg/errors"
-	"github.com/projectdiscovery/gologger"
-	"github.com/yangyang5214/clone-alive/pkg/magic"
-	"github.com/yangyang5214/clone-alive/pkg/types"
-	"github.com/yangyang5214/clone-alive/pkg/utils"
-	fileutil "github.com/yangyang5214/gou/file"
 	"math/rand"
 	"net/http"
 	"os"
@@ -20,6 +13,14 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
+	"github.com/projectdiscovery/gologger"
+	"github.com/yangyang5214/clone-alive/pkg/magic"
+	"github.com/yangyang5214/clone-alive/pkg/types"
+	"github.com/yangyang5214/clone-alive/pkg/utils"
+	fileutil "github.com/yangyang5214/gou/file"
 )
 
 type Alive struct {

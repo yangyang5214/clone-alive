@@ -2,10 +2,11 @@ package output
 
 import (
 	"encoding/json"
+	"path/filepath"
+
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/pkg/types"
-	"path/filepath"
 )
 
 var RouterFile = "runtime.log"

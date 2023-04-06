@@ -6,7 +6,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	stack "github.com/emirpasic/gods/stacks/linkedliststack"
+	"net/http"
+	"net/url"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
 	"github.com/go-rod/rod/lib/launcher/flags"
@@ -23,17 +32,9 @@ import (
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
 	fileutil "github.com/yangyang5214/gou/file"
+	"github.com/yangyang5214/gou/stack"
 	urlutil "github.com/yangyang5214/gou/url"
 	"go.uber.org/multierr"
-	"net/http"
-	"net/url"
-	"os"
-	"path"
-	"path/filepath"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 const (
@@ -49,9 +50,8 @@ type Crawler struct {
 	domain        string
 	domains       []string
 	htmlUrls      []string
-	pendingQueue  stack.Stack
+	pendingQueue  *stack.Stack[types.Request]
 	urlMap        sync.Map
-	mu            sync.Mutex
 	option        types.Options
 	expandClient  *magic.ExpandVerifyCode
 	attributeMock *magic.Attribute
@@ -117,9 +117,8 @@ func New(options *types.Options) (*Crawler, error) {
 		rootHost:      urlutil.GetUrlHost(options.Url),
 		domain:        utils.GetDomain(options.Url),
 		domains:       utils.GetDomains(options.Url),
-		pendingQueue:  *stack.New(),
+		pendingQueue:  stack.NewStack[types.Request](),
 		urlMap:        sync.Map{},
-		mu:            sync.Mutex{},
 		attributeMock: magic.NewAttribute(),
 	}, nil
 }
@@ -140,8 +139,6 @@ func (c *Crawler) isCrawled(urlStr string) bool {
 }
 
 func (c *Crawler) AddNewUrl(request types.Request) bool {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	if c.isCrawled(request.Url) {
 		return false
 	}
@@ -172,20 +169,14 @@ func (c *Crawler) Crawl(rootURL string) error {
 	callback := c.navigateCallback()
 
 	for {
-		if !(atomic.LoadInt32(&running) > 0) && (c.pendingQueue.Size() == 0) {
+		if !(atomic.LoadInt32(&running) > 0) && (c.pendingQueue.Len() == 0) {
 			gologger.Info().Msg("Url pending queue is empty, break")
 			break
 		}
-
-		c.mu.Lock()
-		item, ok := c.pendingQueue.Pop()
-		c.mu.Unlock()
+		req, ok := c.pendingQueue.Pop()
 		if !ok {
 			continue
 		}
-
-		req := item.(types.Request)
-
 		wg.Add()
 		atomic.AddInt32(&running, 1)
 

@@ -1,9 +1,10 @@
 package simple
 
 import (
-	"github.com/yangyang5214/clone-alive/pkg/types"
 	"os"
 	"testing"
+
+	"github.com/yangyang5214/clone-alive/pkg/types"
 )
 
 func TestStatic(t *testing.T) {
@@ -19,8 +20,5 @@ func TestStatic(t *testing.T) {
 		panic(err)
 	}
 	//_, err = simpleCrawler.CrawlAndSave("https://www.baidu.com/", "index.html")
-	_, err = simpleCrawler.CrawlAndSave("https://183.134.103.232/resources/jquery/base64.js%3Fjs_ver=2023-02-16", "index.html") //404
-	if err != nil {
-		t.Log(err)
-	}
+	_ = simpleCrawler.CrawlAndSave("https://183.134.103.232/resources/jquery/base64.js%3Fjs_ver=2023-02-16", "index.html") //404
 }

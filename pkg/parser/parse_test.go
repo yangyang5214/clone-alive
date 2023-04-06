@@ -1,10 +1,11 @@
 package parser
 
 import (
-	"github.com/PuerkitoBio/goquery"
-	"github.com/yangyang5214/clone-alive/pkg/types"
 	"strings"
 	"testing"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/yangyang5214/clone-alive/pkg/types"
 )
 
 func buildResponse() types.Response {

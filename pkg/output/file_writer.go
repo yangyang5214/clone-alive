@@ -2,9 +2,10 @@ package output
 
 import (
 	"bufio"
+	"os"
+
 	"github.com/projectdiscovery/gologger"
 	fileutil "github.com/yangyang5214/gou/file"
-	"os"
 )
 
 //https://github.com/projectdiscovery/katana/blob/main/pkg/output/file_writer.go

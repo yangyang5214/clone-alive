@@ -2,9 +2,6 @@ package magic
 
 import (
 	"crypto/tls"
-	"github.com/projectdiscovery/gologger"
-	"github.com/yangyang5214/clone-alive/pkg/types"
-	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"io"
 	"net/http"
 	"net/url"
@@ -12,6 +9,10 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/projectdiscovery/gologger"
+	"github.com/yangyang5214/clone-alive/pkg/types"
+	"github.com/yangyang5214/clone-alive/pkg/utils"
 )
 
 const (

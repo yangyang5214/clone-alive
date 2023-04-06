@@ -1,10 +1,11 @@
 package parser
 
 import (
+	"strings"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/pkg/types"
-	"strings"
 )
 
 type ResponseParserFunc func(resp types.Response) []string

@@ -1,0 +1,19 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the project
+    cmds:
+      - mkdir bin
+      - go build -o bin/clone-alive main.go
+
+  test:
+    desc: Run tests for the project
+    cmds:
+      - go test ./...
+
+  format:
+    desc: Format the codebase
+    cmds:
+      - gofmt -w .
+      - goimports -w .

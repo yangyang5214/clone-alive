@@ -1,8 +1,9 @@
 package magic
 
 import (
-	"github.com/kr/pretty"
 	"testing"
+
+	"github.com/kr/pretty"
 )
 
 func TestGenExpand(t *testing.T) {

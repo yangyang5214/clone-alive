@@ -1,9 +1,10 @@
 package magic
 
 import (
+	"strings"
+
 	"github.com/go-rod/rod"
 	"github.com/projectdiscovery/gologger"
-	"strings"
 )
 
 type AttributeType = string

@@ -2,22 +2,23 @@ package simple
 
 import (
 	"crypto/tls"
-	stack "github.com/emirpasic/gods/stacks/linkedliststack"
-	rod_util "github.com/go-rod/rod/lib/utils"
-	"github.com/projectdiscovery/gologger"
-	"github.com/yangyang5214/clone-alive/pkg/parser"
-	"github.com/yangyang5214/clone-alive/pkg/types"
-	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"time"
+
+	rod_util "github.com/go-rod/rod/lib/utils"
+	"github.com/projectdiscovery/gologger"
+	"github.com/yangyang5214/clone-alive/pkg/parser"
+	"github.com/yangyang5214/clone-alive/pkg/types"
+	"github.com/yangyang5214/clone-alive/pkg/utils"
+	"github.com/yangyang5214/gou/stack"
 )
 
 type Crawler struct {
 	httpClient   *http.Client
-	pendingQueue stack.Stack
+	pendingQueue stack.Stack[string]
 	domain       string
 	targetDir    string
 }
@@ -30,7 +31,7 @@ func New(option *types.Options) (*Crawler, error) {
 	return &Crawler{
 		targetDir:    option.TargetDir,
 		domain:       utils.GetDomain(option.Url),
-		pendingQueue: *stack.New(),
+		pendingQueue: *stack.NewStack[string](),
 		httpClient: &http.Client{
 			Transport: tr,
 			Timeout:   60 * time.Second},
@@ -41,16 +42,14 @@ func (c *Crawler) Crawl(rootUrl string) error {
 	c.pendingQueue.Push(rootUrl)
 	callback := c.navigateCallback()
 	for {
-		if c.pendingQueue.Size() == 0 {
+		if c.pendingQueue.Len() == 0 {
 			gologger.Info().Msg("Url pending queue is empty, break")
 			break
 		}
-		item, ok := c.pendingQueue.Pop()
+		_url, ok := c.pendingQueue.Pop()
 		if !ok {
 			continue
 		}
-
-		_url := item.(string)
 		resp := c.CrawlAndSave(_url, utils.GetUrlPath(_url))
 		if resp == nil {
 			continue

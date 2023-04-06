@@ -1,8 +1,9 @@
 package types
 
 import (
-	"github.com/yangyang5214/clone-alive/pkg/utils"
 	"strings"
+
+	"github.com/yangyang5214/clone-alive/pkg/utils"
 )
 
 var FileType = map[string]string{

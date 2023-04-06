@@ -1,6 +1,10 @@
 package internal
 
 import (
+	"net/url"
+	"os"
+	"path"
+
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/internal/banner"
@@ -8,9 +12,6 @@ import (
 	"github.com/yangyang5214/clone-alive/pkg/engine/chrome"
 	"github.com/yangyang5214/clone-alive/pkg/engine/simple"
 	"github.com/yangyang5214/clone-alive/pkg/types"
-	"net/url"
-	"os"
-	"path"
 )
 
 type Runner struct {

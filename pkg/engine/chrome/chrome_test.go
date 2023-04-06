@@ -1,9 +1,10 @@
 package chrome
 
 import (
-	"github.com/yangyang5214/clone-alive/pkg/types"
 	"os"
 	"testing"
+
+	"github.com/yangyang5214/clone-alive/pkg/types"
 )
 
 // TestKillAllChrome is kill all running chromium

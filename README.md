@@ -1,5 +1,17 @@
 > Clone a website then deploy ...
 
+###  Task build
+
+https://taskfile.dev/installation/
+
+```
+# mac
+brew install go-task
+
+
+```
+
+
 ### install
 
 - go version >=1.18

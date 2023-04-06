@@ -1,13 +1,14 @@
 package cmd
 
 import (
+	"os"
+	"path/filepath"
+
 	"github.com/projectdiscovery/gologger"
 	"github.com/spf13/cobra"
 	"github.com/yangyang5214/clone-alive/pkg/alive"
 	"github.com/yangyang5214/clone-alive/pkg/output"
 	"github.com/yangyang5214/clone-alive/pkg/types"
-	"os"
-	"path/filepath"
 )
 
 var aliveOption types.AliveOption

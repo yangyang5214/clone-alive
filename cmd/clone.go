@@ -1,10 +1,11 @@
 package cmd
 
 import (
+	"os"
+
 	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/internal"
 	"github.com/yangyang5214/clone-alive/pkg/types"
-	"os"
 
 	"github.com/spf13/cobra"
 )
