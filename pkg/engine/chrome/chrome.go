@@ -1,20 +1,19 @@
 package chrome
 
 import (
-	"bufio"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/yangyang5214/gou/set"
 
 	"github.com/go-rod/rod"
 	"github.com/go-rod/rod/lib/launcher"
@@ -25,7 +24,6 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/remeh/sizedwaitgroup"
 	"github.com/shirou/gopsutil/v3/process"
-	"github.com/yangyang5214/clone-alive/pkg/engine/simple"
 	"github.com/yangyang5214/clone-alive/pkg/magic"
 	"github.com/yangyang5214/clone-alive/pkg/output"
 	"github.com/yangyang5214/clone-alive/pkg/parser"
@@ -51,7 +49,7 @@ type Crawler struct {
 	domains       []string
 	htmlUrls      []string
 	pendingQueue  *stack.Stack[types.Request]
-	urlMap        sync.Map
+	crawledUrl    *set.SyncSet
 	option        types.Options
 	expandClient  *magic.ExpandVerifyCode
 	attributeMock *magic.Attribute
@@ -118,7 +116,7 @@ func New(options *types.Options) (*Crawler, error) {
 		domain:        utils.GetDomain(options.Url),
 		domains:       utils.GetDomains(options.Url),
 		pendingQueue:  stack.NewStack[types.Request](),
-		urlMap:        sync.Map{},
+		crawledUrl:    set.NewSyncSet(),
 		attributeMock: magic.NewAttribute(),
 	}, nil
 }
@@ -130,8 +128,7 @@ func (c *Crawler) isCrawled(urlStr string) bool {
 		utils.GetRealUrl(urlStr),
 	}
 	for _, item := range urls {
-		_, exist := c.urlMap.Load(item)
-		if exist {
+		if c.crawledUrl.Contains(item) {
 			return true
 		}
 	}
@@ -143,8 +140,8 @@ func (c *Crawler) AddNewUrl(request types.Request) bool {
 		return false
 	}
 	c.pendingQueue.Push(request)
-	c.urlMap.Store(request.Url, true)
-	c.urlMap.Store(utils.GetRealUrl(request.Url), true)
+	c.crawledUrl.Add(request.Url)
+	c.crawledUrl.Add(utils.GetRealUrl(request.Url))
 	return true
 }
 
@@ -186,12 +183,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 
 			resp, err := c.navigateRequest(browserInstance, req)
 			if err != nil {
-				errResult := types.ResponseResult{
-					Timestamp: time.Now(),
-					Url:       req.Url,
-					Error:     err.Error(),
-				}
-				_ = c.outputWriter.Write(errResult)
+				gologger.Error().Msg(err.Error())
 				return
 			}
 			if resp == nil {
@@ -207,43 +199,7 @@ func (c *Crawler) Crawl(rootURL string) error {
 		gologger.Error().Msgf("Save file error %s", err.Error())
 	}
 
-	// 这里是 append 模式再去静态爬取
-	if !c.option.Append {
-		c.crawlerStaticHtml()
-	}
-
 	return nil
-}
-
-func (c *Crawler) crawlerStaticHtml() {
-	f, err := os.Open(path.Join(c.targetDir, output.RouterFile))
-	defer f.Close()
-	if err != nil {
-		panic(err) //暴露问题 处理异常
-	}
-	simpleCrawler, err := simple.New(&types.Options{
-		TargetDir: c.option.TargetDir,
-	})
-	if err != nil {
-		panic(err)
-	}
-	scanner := bufio.NewScanner(f)
-	for scanner.Scan() {
-		line := scanner.Text()
-		var resp *types.ResponseResult
-		err = json.Unmarshal([]byte(line), &resp)
-		if err != nil {
-			gologger.Error().Msgf("json Unmarshal error: %s. \n%s\n", line, err.Error())
-			continue
-		}
-		if resp.HttpMethod == "GET" && resp.ResponseContentType == "text/html" {
-			urlPath := utils.GetUrlPath(resp.Url)
-			if urlPath == "/" {
-				urlPath = "index.html"
-			}
-			_ = simpleCrawler.CrawlAndSave(resp.Url, urlPath)
-		}
-	}
 }
 
 // navigateCallback is add new url to queue
@@ -293,8 +249,6 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 
 	lastTimestamp := time.Now().Unix()
 
-	var resp *types.ResponseResult //req.url response
-
 	requestMap := sync.Map{}
 
 	go page.EachEvent(func(e *proto.NetworkLoadingFinished) {
@@ -304,12 +258,14 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 
 		data, ok := requestMap.Load(e.RequestID)
 		if !ok {
-			gologger.Warning().Msg("RequestID not exist, skip")
+			gologger.Debug().Msg("RequestID not exist, skip")
 			return
 		}
 		event := data.(*types.EventListen)
 		request := event.Request
 		response := event.Response
+
+		gologger.Debug().Msgf("Start process RequestID %s", e.RequestID)
 
 		if request == nil {
 			request = &proto.NetworkRequest{
@@ -318,14 +274,8 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 			}
 		}
 		_url := request.URL
-		if c.isCrawled(_url) {
-			return
-		}
-		urlParsed, err := url.Parse(_url)
-		if err != nil {
-			return
-		}
 
+		urlParsed, _ := url.Parse(_url)
 		if urlParsed.Host != c.rootHost {
 			gologger.Debug().Msgf("out of site url %s, skip", _url)
 			return // 外部站点
@@ -338,12 +288,12 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 			m := proto.NetworkGetResponseBody{RequestID: e.RequestID}
 			r, err := m.Call(page)
 			if err != nil {
+				gologger.Error().Msgf("GetResponseBody error: %s", err.Error())
 				return
 			}
 			contentType := response.MIMEType
 			urlPath := urlParsed.Path
 			gologger.Info().Msgf("【%s】 %s find --> %s", contentType, _url, urlPath)
-
 			requestContentTypeVal := request.Headers["Content-Type"].Val()
 			if requestContentTypeVal == nil {
 				requestContentTypeVal = ""
@@ -361,8 +311,8 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 			}
 
 			var expandResult = c.expandClient.Run(_url, contentType)
-			if expandResult == nil {
-				c.log(respResult)
+			if len(expandResult) == 0 {
+				c.saveResponse(respResult)
 			} else {
 				for _, item := range expandResult {
 					itemResp := *respResult
@@ -373,23 +323,26 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 				}
 				_ = c.outputWriter.Write(*respResult)
 			}
-
-			if utils.IsSameURL(_url, req.Url) {
-				resp = respResult
-			}
 		}()
 
 	}, func(e *proto.NetworkRequestWillBeSent) {
 		requestMap.Store(e.RequestID, &types.EventListen{
-			Request: e.Request,
+			RequestId: e.RequestID,
+			Request:   e.Request,
 		})
 	}, func(e *proto.NetworkRequestWillBeSentExtraInfo) {
 		//https://github.com/go-rod/rod/issues/351 目前没需求
+		requestMap.Store(e.RequestID, &types.EventListen{
+			RequestId: e.RequestID,
+		})
+		gologger.Debug().Msgf("Add new request_id %s", e.RequestID)
 	}, func(e *proto.NetworkResponseReceived) {
+		gologger.Debug().Msgf("Get response for request_id %s", e.RequestID)
 		data, ok := requestMap.Load(e.RequestID)
 		if !ok {
 			requestMap.Store(e.RequestID, &types.EventListen{
-				Response: e.Response,
+				RequestId: e.RequestID,
+				Response:  e.Response,
 			})
 		} else {
 			event := data.(*types.EventListen)
@@ -426,36 +379,10 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 		return nil, errors.Wrap(err, "could not get html")
 	}
 
-	var responseContentType string
-	if resp != nil {
-		responseContentType = resp.ResponseContentType
-	}
-	resp = &types.ResponseResult{
-		Timestamp:           time.Now(),
-		Url:                 req.Url, //currentUrl already collect in network event
-		Body:                html,
-		Status:              http.StatusOK,
-		ResponseContentType: responseContentType,
-		HttpMethod:          http.MethodGet,
-		Depth:               req.Depth + 1,
-	}
-
-	if !c.option.Append && resp.ResponseContentType == types.TextHtml && utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
+	if utils.GetUrlPath(req.Url) == utils.GetUrlPath(c.option.Url) {
 		_ = rod.Try(func() {
 			page.MustScreenshotFullPage(filepath.Join(c.targetDir, "screenshot", urlutil.GetUrlHost(req.Url)+".png"))
 		})
-	}
-
-	locationHref, err := c.locationHref(page)
-	if err != nil {
-		gologger.Error().Msgf("Get locationHref error. %s", req.Url)
-	} else {
-		gologger.Info().Msgf("locationHref is %s", locationHref)
-	}
-	c.log(resp)
-	if !utils.IsSameURL(locationHref, req.Url) {
-		resp.Url = locationHref
-		c.log(resp)
 	}
 
 	c.processLoginForm(page)
@@ -464,8 +391,7 @@ func (c *Crawler) navigateRequest(browser *rod.Browser, req types.Request) (*typ
 	c.waitLoaded(lastTimestamp, 30)
 
 	return &types.Response{
-		Body:  resp.Body,
-		Depth: req.Depth + 1,
+		Body: html,
 	}, nil
 }
 
@@ -532,14 +458,23 @@ func (c *Crawler) processLoginForm(page *rod.Page) {
 	}
 }
 
-func (c *Crawler) log(result *types.ResponseResult) {
-	c.urlMap.Store(result.Url, true)
-	_ = c.outputWriter.Write(*result)
+func (c *Crawler) saveResponse(result *types.ResponseResult) {
+	c.crawledUrl.Add(result.Url) //backup
+	err := c.outputWriter.Write(*result)
+	if err != nil {
+		gologger.Error().Msgf("Write response error %s", err.Error())
+	}
+
 	c.saveFile(utils.GetUrlPath(result.Url), result)
-	if utils.IsSameURL(result.Url, c.option.Url) && !c.option.Append {
+
+	//如果是入口页面，保存一份 index.html
+	if utils.IsSameURL(result.Url, c.option.Url) && result.ResponseContentType == "text/html" {
 		parsed, _ := url.Parse(result.Url)
 		result.Url = fmt.Sprintf(`%s://%s`, parsed.Scheme, parsed.Host)
-		_ = c.outputWriter.Write(*result)
+		err = c.outputWriter.Write(*result)
+		if err != nil {
+			gologger.Error().Msgf("Write response error %s", err.Error())
+		}
 		c.saveFile("index.html", result)
 	}
 }
@@ -560,12 +495,11 @@ func (c *Crawler) getScrollHeight(page *rod.Page) int {
 
 // saveFile it's save data to file
 func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
+	gologger.Debug().Msgf("Save file %s", urlPath)
 	var data interface{}
 	data = resp.Body
 
-	if strings.HasSuffix(urlPath, "/") {
-		urlPath = urlPath[0 : len(urlPath)-1]
-	}
+	urlPath = strings.TrimRight(urlPath, "/")
 
 	var paths []string
 	if urlPath == "" {
@@ -573,11 +507,11 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 	} else {
 		paths = []string{c.targetDir, urlPath}
 		//https://github.com/yangyang5214/clone-alive/issues/15
-		lastPath := utils.GetSplitLast(urlPath, "/")
+		parts := strings.Split(urlPath, "/")
+		lastPath := parts[len(parts)-1]
 		if !strings.Contains(lastPath, ".") {
 			fileNameSuffix := types.ConvertFileName(resp.ResponseContentType)
 			paths = append(paths, "index."+fileNameSuffix)
-			//paths[len(paths)-1] = paths[len(paths)-1] + "." + fileNameSuffix
 		}
 	}
 
@@ -593,13 +527,13 @@ func (c *Crawler) saveFile(urlPath string, resp *types.ResponseResult) {
 		data = strings.Replace(resp.Body, magic.DefaultEmail, "", -1)
 		data = strings.Replace(resp.Body, magic.DefaultUser, "", -1)
 		data = strings.Replace(resp.Body, magic.DefaultText, "", -1)
-	}
-
-	if strings.HasPrefix(resp.ResponseContentType, "image") {
+	} else if strings.HasPrefix(resp.ResponseContentType, "image/") {
 		data = base64.NewDecoder(base64.StdEncoding, strings.NewReader(data.(string)))
 	}
+
 	p := filepath.Join(paths...)
 	if fileutil.FileExists(p) {
+		gologger.Info().Msgf("File %s is exists, skip", p)
 		return
 	}
 	err := rod_util.OutputFile(p, data)

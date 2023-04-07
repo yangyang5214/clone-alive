@@ -10,6 +10,7 @@ const (
 )
 
 type EventListen struct {
-	Request  *proto.NetworkRequest
-	Response *proto.NetworkResponse
+	Request   *proto.NetworkRequest
+	Response  *proto.NetworkResponse
+	RequestId proto.NetworkRequestID
 }

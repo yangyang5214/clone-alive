@@ -45,16 +45,15 @@ func New(options *types.Options) (*Runner, error) {
 
 	targetDir := path.Join(pwd, urlParsed.Host)
 
-	if !options.Append {
-		if _, err := os.Stat(targetDir); err == nil {
-			_ = os.RemoveAll(targetDir)
-		}
-
-		err = os.MkdirAll(targetDir, os.ModePerm)
-		if err != nil {
-			return nil, err
-		}
+	if _, err = os.Stat(targetDir); err == nil {
+		_ = os.RemoveAll(targetDir)
 	}
+
+	err = os.MkdirAll(targetDir, os.ModePerm)
+	if err != nil {
+		return nil, err
+	}
+
 	options.TargetDir = targetDir
 
 	crawler, err = chrome.New(options)

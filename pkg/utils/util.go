@@ -30,9 +30,7 @@ func GetDomains(u string) []string {
 		fmt.Sprintf("%s://%s", "http", urlParsed.Host+":80"),
 		fmt.Sprintf("%s://%s", "https", urlParsed.Host+":443"),
 		fmt.Sprintf("%s://%s", "https", urlParsed.Host),
-		fmt.Sprintf("%s://%s", "https", GetSplitLast(urlParsed.Host, ":")),
 		fmt.Sprintf("%s://%s", "http", urlParsed.Host),
-		fmt.Sprintf("%s://%s", "http", GetSplitLast(urlParsed.Host, ":")),
 	}
 }
 

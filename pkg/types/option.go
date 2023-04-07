@@ -4,7 +4,6 @@ type Options struct {
 	Url         string
 	MaxDepth    int8
 	Static      bool
-	Append      bool
 	Debug       bool
 	MaxDuration int
 	Concurrent  int
