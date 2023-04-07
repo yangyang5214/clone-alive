@@ -1,4 +1,4 @@
 clone-alive
 go.work*
 .idea
-./bin*
+bin
