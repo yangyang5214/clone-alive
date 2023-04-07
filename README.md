@@ -1,16 +1,13 @@
 > Clone a website then deploy ...
 
-###  Task build
+### Task build
 
 https://taskfile.dev/installation/
 
 ```
 # mac
 brew install go-task
-
-
 ```
-
 
 ### install
 
