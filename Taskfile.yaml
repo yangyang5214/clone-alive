@@ -4,7 +4,7 @@ tasks:
   build:
     desc: Build the project
     cmds:
-      - mkdir bin
+      - mkdir -p bin
       - go build -o bin/clone-alive main.go
 
   test:
