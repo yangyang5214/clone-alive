@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"github.com/yangyang5214/gou/set"
 	"math/rand"
 	"net/http"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+
+	"github.com/yangyang5214/gou/set"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"

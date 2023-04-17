@@ -2,17 +2,18 @@ package magic
 
 import (
 	"crypto/tls"
-	"github.com/projectdiscovery/gologger"
-	"github.com/yangyang5214/clone-alive/pkg/types"
-	"github.com/yangyang5214/clone-alive/pkg/utils"
-	"github.com/yangyang5214/gou/file"
-	"github.com/yangyang5214/gou/set"
 	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/projectdiscovery/gologger"
+	"github.com/yangyang5214/clone-alive/pkg/types"
+	"github.com/yangyang5214/clone-alive/pkg/utils"
+	fileutil "github.com/yangyang5214/gou/file"
+	"github.com/yangyang5214/gou/set"
 )
 
 const (
