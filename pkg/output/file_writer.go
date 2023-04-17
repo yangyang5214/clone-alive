@@ -3,6 +3,7 @@ package output
 import (
 	"bufio"
 	"os"
+	"sync"
 
 	"github.com/projectdiscovery/gologger"
 	fileutil "github.com/yangyang5214/gou/file"
@@ -14,6 +15,7 @@ import (
 type FileWriter struct {
 	file   *os.File
 	writer *bufio.Writer
+	mux    sync.Mutex
 }
 
 // NewFileOutputWriter creates a new buffered writer for a file
@@ -34,6 +36,8 @@ func newFileOutputWriter(file string) (fw *FileWriter, err error) {
 
 // WriteString writes an output to the underlying file
 func (w *FileWriter) Write(data []byte) error {
+	w.mux.Lock()
+	defer w.mux.Unlock()
 	_, err := w.writer.Write(data)
 	if err != nil {
 		return err
