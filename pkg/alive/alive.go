@@ -37,23 +37,25 @@ type RouteResp struct {
 }
 
 func New(option types.AliveOption) *Alive {
+	partUrlPaths := fileutil.FileReadLinesSet(option.VerifyCodePath)
+	gologger.Info().Msgf("Alive Load partUrlPaths size %d", partUrlPaths.Size())
 	return &Alive{
 		option:       option,
 		routeMap:     sync.Map{},
-		partUrlPaths: fileutil.FileReadLinesSet(option.VerifyCodePath),
+		partUrlPaths: partUrlPaths,
 	}
 }
 
 func (a *Alive) findResp(urlpath string) any {
-	var urlpaths []string
-	urlpaths = append(urlpaths, urlpath)
+	var urlPaths []string
+	urlPaths = append(urlPaths, urlpath)
 	if strings.HasSuffix(urlpath, "/") {
-		urlpaths = append(urlpaths, urlpath[:len(urlpath)-1])
+		urlPaths = append(urlPaths, urlpath[:len(urlpath)-1])
 	} else {
-		urlpaths = append(urlpaths, urlpath+"/")
+		urlPaths = append(urlPaths, urlpath+"/")
 	}
 
-	for _, item := range urlpaths {
+	for _, item := range urlPaths {
 		v, ok := a.routeMap.Load(item)
 		if ok {
 			return v

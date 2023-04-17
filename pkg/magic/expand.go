@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"path"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/projectdiscovery/gologger"
@@ -27,6 +28,8 @@ type ExpandVerifyCode struct {
 }
 
 func NewExpand(retry int, verifyCodePath string) *ExpandVerifyCode {
+	partUrlPaths := fileutil.FileReadLinesSet(verifyCodePath)
+	gologger.Info().Msgf("Load partUrlPaths size %d", partUrlPaths.Size())
 	return &ExpandVerifyCode{
 		httpClient: &http.Client{
 			Transport: &http.Transport{
@@ -37,7 +40,7 @@ func NewExpand(retry int, verifyCodePath string) *ExpandVerifyCode {
 			Timeout: 10 * time.Second,
 		},
 		retryCount:   retry,
-		partUrlPaths: fileutil.FileReadLinesSet(verifyCodePath),
+		partUrlPaths: partUrlPaths,
 	}
 }
 
@@ -47,9 +50,11 @@ type VerifyCodeResults struct {
 }
 
 func Hit(urlPath string, partUrlPaths *set.Set[string]) bool {
-	if partUrlPaths.Contains(urlPath) {
-		gologger.Info().Msgf("Url <%s> Hit <%s>", urlPath, urlPath)
-		return true
+	for _, item := range partUrlPaths.Elements() {
+		if strings.Contains(urlPath, item) {
+			gologger.Info().Msgf("Url hit <%s> <--> <%s>", urlPath, urlPath)
+			return true
+		}
 	}
 	return false
 }
