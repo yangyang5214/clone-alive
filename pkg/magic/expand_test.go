@@ -7,7 +7,7 @@ import (
 )
 
 func TestGenExpand(t *testing.T) {
-	expand := NewExpand(3)
+	expand := NewExpand(3, "")
 
 	t.Run("case1", func(t *testing.T) {
 		r := expand.Run("https://120.27.184.164/?module=captcha&0.09322127984833917", "image/png")

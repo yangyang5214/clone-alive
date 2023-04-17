@@ -47,4 +47,5 @@ func init() {
 	cloneCmd.Flags().IntVarP(&option.Concurrent, "concurrent", "c", 5, "the number of concurrent crawling goroutines")
 	cloneCmd.Flags().IntVarP(&option.Timeout, "timeout", "t", 30, "set timeout")
 	cloneCmd.Flags().StringVarP(&option.Proxy, "proxy", "p", "", "set http proxy")
+	cloneCmd.Flags().StringVarP(&option.VerifyCodePath, "verify_code", "", "", "verify_code file path")
 }

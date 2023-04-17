@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/yangyang5214/gou/set"
 	"math/rand"
 	"net/http"
 	"os"
@@ -24,8 +25,9 @@ import (
 )
 
 type Alive struct {
-	option   types.AliveOption
-	routeMap sync.Map
+	option       types.AliveOption
+	routeMap     sync.Map
+	partUrlPaths *set.Set[string]
 }
 
 type RouteResp struct {
@@ -35,8 +37,9 @@ type RouteResp struct {
 
 func New(option types.AliveOption) *Alive {
 	return &Alive{
-		option:   option,
-		routeMap: sync.Map{},
+		option:       option,
+		routeMap:     sync.Map{},
+		partUrlPaths: fileutil.FileReadLinesSet(option.VerifyCodePath),
 	}
 }
 
@@ -59,7 +62,7 @@ func (a *Alive) findResp(urlpath string) any {
 }
 
 func (a *Alive) tryMagic(routePath string, contentType string) string {
-	if magic.Hit(routePath) {
+	if magic.Hit(routePath, a.partUrlPaths) {
 		var fileName string
 		var p string
 		for i := 0; i < magic.RetryCount; i++ {
@@ -223,7 +226,7 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 			continue
 		}
 
-		if types.IsStaticFile(resp.Url) && !magic.Hit(urlPath) {
+		if types.IsStaticFile(resp.Url) && !magic.Hit(urlPath, a.partUrlPaths) {
 			engine.Handle(resp.HttpMethod, urlPath, a.handleStaticFileRoute())
 		} else {
 			// https://stackoverflow.com/questions/32443738/setting-up-route-not-found-in-gin/

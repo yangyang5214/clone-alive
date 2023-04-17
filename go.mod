@@ -12,7 +12,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.22.12
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.2
-	github.com/yangyang5214/gou v0.0.3
+	github.com/yangyang5214/gou v0.0.5
 	go.uber.org/multierr v1.9.0
 )
 
