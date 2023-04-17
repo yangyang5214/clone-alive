@@ -3,11 +3,18 @@ package magic
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/kr/pretty"
 )
 
+var expand *ExpandVerifyCode
+
+func init() {
+	expand = NewExpand(3, "./../../config/verify_code")
+}
+
 func TestGenExpand(t *testing.T) {
-	expand := NewExpand(3)
 
 	t.Run("case1", func(t *testing.T) {
 		r := expand.Run("https://120.27.184.164/?module=captcha&0.09322127984833917", "image/png")
@@ -21,4 +28,8 @@ func TestGenExpand(t *testing.T) {
 		pretty.Log(r)
 	})
 
+}
+
+func TestHit(t *testing.T) {
+	assert.Equal(t, Hit("http://127.0.0.1:8080/verifycode.do?width=70&height=20&codecount=4&codestyle=digit&timestamp=1679123449408", expand.partUrlPaths), true)
 }

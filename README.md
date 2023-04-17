@@ -164,6 +164,29 @@ go to http://localhost:8000/
 
 ![](./images/metabase.png)
 
+#### verify_code
+
+> 模拟验证码效果。可以点击刷新验证码，模拟真实效果
+
+![](./images/code.png)
+
+```
+# clone set verify_code path
+clone-alive clone --verify_code config/verify_code <xxxxxx>
+
+# alive set verify_code path
+clone-alive alive --verify_code config/verify_code <xxxxxx>
+```
+
+- test
+
+```
+// expand.partUrlPaths from config/verify_code file
+func TestHit(t *testing.T) {
+	assert.Equal(t, Hit("http://127.0.0.1:8080/verifycode.do?width=70&height=20&codecount=4&codestyle=digit&timestamp=1679123449408", expand.partUrlPaths), true)
+}
+```
+
 ### Reference
 
 https://github.com/go-rod/rod

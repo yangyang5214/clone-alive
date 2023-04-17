@@ -13,6 +13,8 @@ import (
 	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
+	fileutil "github.com/yangyang5214/gou/file"
+	"github.com/yangyang5214/gou/set"
 )
 
 const (
@@ -20,8 +22,26 @@ const (
 )
 
 type ExpandVerifyCode struct {
-	httpClient *http.Client
-	retryCount int
+	httpClient   *http.Client
+	retryCount   int
+	partUrlPaths *set.Set[string]
+}
+
+func NewExpand(retry int, verifyCodePath string) *ExpandVerifyCode {
+	partUrlPaths := fileutil.FileReadLinesSet(verifyCodePath)
+	gologger.Info().Msgf("Load partUrlPaths size %d", partUrlPaths.Size())
+	return &ExpandVerifyCode{
+		httpClient: &http.Client{
+			Transport: &http.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+			Timeout: 10 * time.Second,
+		},
+		retryCount:   retry,
+		partUrlPaths: partUrlPaths,
+	}
 }
 
 type VerifyCodeResults struct {
@@ -29,19 +49,10 @@ type VerifyCodeResults struct {
 	Body   string
 }
 
-var partUrlPath = []string{
-	"verifycode", //http://58.56.78.6:81/pages/login.jsp
-	"getCode",
-	"servlets/vms",   //http://58.250.50.115:5050/
-	"login/code",     //http://10.0.81.29:8001/
-	"module=captcha", //https://120.27.184.164/
-	"createcode",     //https://222.187.115.230:10443/
-}
-
-func Hit(urlPath string) bool {
-	for _, item := range partUrlPath {
+func Hit(urlPath string, partUrlPaths *set.Set[string]) bool {
+	for _, item := range partUrlPaths.Elements() {
 		if strings.Contains(urlPath, item) {
-			gologger.Info().Msgf("Url <%s> Hit <%s>", urlPath, item)
+			gologger.Info().Msgf("Url hit <%s> <--> <%s>", urlPath, urlPath)
 			return true
 		}
 	}
@@ -62,7 +73,7 @@ func (e *ExpandVerifyCode) Run(urlStr string, contentType string) (result []*Ver
 		return []*VerifyCodeResults{}
 	}
 
-	if !Hit(urlParsed.String()) {
+	if !Hit(urlParsed.String(), e.partUrlPaths) {
 		gologger.Debug().Msgf("Url <%s> not match rules, skip", urlStr)
 		return []*VerifyCodeResults{}
 	}
@@ -88,19 +99,5 @@ func (e *ExpandVerifyCode) httpGet(u *url.URL, index int, contentType string) *V
 	return &VerifyCodeResults{
 		UrlStr: RebuildUrl(u.Path, index, contentType),
 		Body:   string(respBody),
-	}
-}
-
-func NewExpand(retry int) *ExpandVerifyCode {
-	return &ExpandVerifyCode{
-		httpClient: &http.Client{
-			Transport: &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-			Timeout: 10 * time.Second,
-		},
-		retryCount: retry,
 	}
 }

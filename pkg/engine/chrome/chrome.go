@@ -111,7 +111,7 @@ func New(options *types.Options) (*Crawler, error) {
 		tempDir:       dataStore,
 		targetDir:     options.TargetDir,
 		outputWriter:  outputWriter,
-		expandClient:  magic.NewExpand(magic.RetryCount),
+		expandClient:  magic.NewExpand(magic.RetryCount, options.VerifyCodePath),
 		rootHost:      urlutil.GetUrlHost(options.Url),
 		domain:        utils.GetDomain(options.Url),
 		domains:       utils.GetDomains(options.Url),
