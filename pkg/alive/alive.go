@@ -19,6 +19,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/pkg/errors"
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/levels"
 	"github.com/yangyang5214/clone-alive/pkg/magic"
 	"github.com/yangyang5214/clone-alive/pkg/types"
 	"github.com/yangyang5214/clone-alive/pkg/utils"
@@ -124,6 +125,7 @@ func (a *Alive) loadResp(routePath string) *RouteResp {
 func (a *Alive) handleStaticFileRoute() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		fullPath := strings.Split(c.Request.RequestURI, "?")[0]
+		gologger.Debug().Msgf("fullPath is %s", fullPath)
 		fileName := utils.GetSplitLast(fullPath, "/")
 
 		//例子: http://localhost:8001/spa/hrm/static/index.css
@@ -137,7 +139,6 @@ func (a *Alive) handleStaticFileRoute() gin.HandlerFunc {
 		} else {
 			c.File(findPath)
 		}
-		return
 	}
 }
 
@@ -273,8 +274,8 @@ func (a *Alive) Run() (err error) {
 	if err != nil {
 		return err
 	}
-	if !a.option.Debug {
-		gin.SetMode(gin.ReleaseMode)
+	if a.option.Debug {
+		gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
 	}
 	r := gin.Default()
 	err = a.handle(r)
