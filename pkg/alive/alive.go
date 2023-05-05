@@ -276,6 +276,8 @@ func (a *Alive) Run() (err error) {
 	}
 	if a.option.Debug {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelDebug)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
 	}
 	r := gin.Default()
 	err = a.handle(r)
