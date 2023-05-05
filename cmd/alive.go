@@ -39,7 +39,7 @@ var aliveCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(aliveCmd)
 	aliveCmd.Flags().IntVarP(&aliveOption.Port, "port", "p", 8001, "port for server")
-	aliveCmd.Flags().BoolVarP(&aliveOption.Debug, "debug", "b", false, "debug model for gin")
+	aliveCmd.Flags().BoolVarP(&aliveOption.Debug, "debug", "b", false, "debug log level")
 	aliveCmd.Flags().StringVarP(&aliveOption.HomeDir, "home-dir", "d", "", "static file dir")
 	aliveCmd.Flags().StringVarP(&aliveOption.VerifyCodePath, "verify_code", "", "config/verify_code", "verify_code file path")
 }
