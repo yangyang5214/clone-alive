@@ -47,6 +47,7 @@ type Crawler struct {
 	rootHost      string
 	domain        string
 	domains       []string
+	htmlUrls      []string
 	pendingQueue  *stack.Stack[types.Request]
 	crawledUrl    *set.SyncSet
 	option        types.Options
@@ -144,20 +145,6 @@ func (c *Crawler) AddNewUrl(request types.Request) bool {
 	return true
 }
 
-// addDefaultUrls adds default URLs to the crawler
-// https://github.com/yangyang5214/clone-alive/issues/31
-func (c *Crawler) addDefaultUrls() {
-	defaultUrls := []string{
-		"/favicon.ico",
-	}
-	for _, item := range defaultUrls {
-		c.AddNewUrl(types.Request{
-			Url:   c.domain + item,
-			Depth: 0,
-		})
-	}
-}
-
 // Crawl crawls a URL with the specified options
 func (c *Crawler) Crawl(rootURL string) error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -176,7 +163,6 @@ func (c *Crawler) Crawl(rootURL string) error {
 		Url:   rootURL,
 		Depth: 0,
 	})
-	c.addDefaultUrls()
 	callback := c.navigateCallback()
 
 	for {
