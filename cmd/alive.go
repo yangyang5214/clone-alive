@@ -42,4 +42,5 @@ func init() {
 	aliveCmd.Flags().BoolVarP(&aliveOption.Debug, "debug", "b", false, "debug log level")
 	aliveCmd.Flags().StringVarP(&aliveOption.HomeDir, "home-dir", "d", "", "static file dir")
 	aliveCmd.Flags().StringVarP(&aliveOption.VerifyCodePath, "verify_code", "", "config/verify_code", "verify_code file path")
+	aliveCmd.Flags().StringVarP(&aliveOption.CustomRulePath, "custom_rule", "", "config/custom_rule", "custom_rule file path")
 }
