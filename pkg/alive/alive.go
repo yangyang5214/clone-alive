@@ -14,6 +14,8 @@ import (
 	"sync"
 	"syscall"
 
+	urlutil "github.com/yangyang5214/gou/url"
+
 	"github.com/yangyang5214/gou/set"
 
 	"github.com/gin-gonic/gin"
@@ -230,7 +232,7 @@ func (a *Alive) handle(engine *gin.Engine) (err error) {
 			continue
 		}
 
-		if types.IsStaticFile(resp.Url) && !magic.Hit(urlPath, a.partUrlPaths) {
+		if urlutil.IsStaticFile(resp.Url) && !magic.Hit(urlPath, a.partUrlPaths) {
 			engine.Handle(resp.HttpMethod, urlPath, a.handleStaticFileRoute())
 		} else {
 			// https://stackoverflow.com/questions/32443738/setting-up-route-not-found-in-gin/

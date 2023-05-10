@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	urlutil "github.com/yangyang5214/gou/url"
+
 	rod_util "github.com/go-rod/rod/lib/utils"
 	"github.com/projectdiscovery/gologger"
 	"github.com/yangyang5214/clone-alive/pkg/parser"
@@ -90,7 +92,7 @@ func (c *Crawler) navigateCallback() func(req types.Request) {
 			req.Url = resultUrl
 		}
 		c.pendingQueue.Push(req.Url)
-		if types.IsStaticFile(utils.GetUrlPath(req.Url)) {
+		if urlutil.IsStaticFile(utils.GetUrlPath(req.Url)) {
 			c.pendingQueue.Push(utils.GetRealUrl(req.Url))
 		}
 	}

@@ -2,9 +2,10 @@ package utils
 
 import (
 	"fmt"
-	"github.com/projectdiscovery/gologger"
 	"os/exec"
 	"strings"
+
+	"github.com/projectdiscovery/gologger"
 )
 
 func FindFileByName(dir string, name string) string {

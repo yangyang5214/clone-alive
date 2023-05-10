@@ -1,6 +1,12 @@
 version: '3'
 
 tasks:
+  default:
+    desc: Run the default task
+    cmds:
+      - task build
+      - task test
+      - task format
   build:
     desc: Build the project
     cmds:
