@@ -19,5 +19,4 @@ type AliveOption struct {
 	RouteFile      string
 	Debug          bool
 	VerifyCodePath string
-	CustomRulePath string
 }
