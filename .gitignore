@@ -2,3 +2,5 @@ clone-alive
 go.work*
 .idea
 bin
+**/runtime.log
+**/runtime.log.*
